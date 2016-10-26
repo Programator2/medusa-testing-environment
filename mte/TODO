@@ -1,0 +1,5 @@
+- Create a package or a distribution mechanism for easier deployment of the testing environment. It should mainly
+include dependence installation. For now, it is pexpect and paramiko.
+- Think about storing test results in a database. Mongo?
+- Make fork as a python code
+- Add estimated duration for tests
