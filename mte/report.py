@@ -174,7 +174,7 @@ class ConcurrentGenerator(Generator):
             self.file.write('<li class="error"><a href="result_details/concurrent.' + test['test'] +
                             '.output.html">output</a></li>')
             # Create new html
-            self.create_subpage(test, 'output')
+            self.create_subpage(test, 'output', True)
         # Create dmesg file
         if test['dmesg_valid']:
             self.file.write('<li class="ok">dmesg</li>')
@@ -187,10 +187,14 @@ class ConcurrentGenerator(Generator):
             self.file.write('<li class="error">constable</li>')
         self.file.write("</ul>")
 
-    def create_subpage(self, test, log):
+    def create_subpage(self, test, log, output=False):
         """ Creates HTML sub file for constable or dmesg outputs, since they are separatly grouped together.
+        It can also be used to create subpage for a command output - parameter output has to be set to True
         """
-        file = open(self.path + '/result_details/concurrent.' + log + '.html', 'w')
+        if output:
+            file = open(self.path + '/result_details/concurrent.' + test['test'] + '.' + log + '.html', 'w')
+        else:
+            file = open(self.path + '/result_details/concurrent.' + log + '.html', 'w')
         self.begin_sub_html(file)
         file.write('<p>' + test[log].replace('\n', '<br>\n'))
         file.write('</p></body></html>')
