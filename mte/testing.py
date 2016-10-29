@@ -22,7 +22,7 @@ def test_director(pickle_location):
     @param pickle_location: File name of the pickled test information
     """
     # Unpickle test information that was prepared by hosting computer
-    (tests, suites) = unpickle_tests(os.path.join(commons.VM_TPM_PATH, pickle_location))
+    (tests, suites) = unpickle_tests(os.path.join(commons.VM_MTE_PATH, pickle_location))
     # We need to create configuration file just once
     create_configuration(tests)
     for suite in suites:

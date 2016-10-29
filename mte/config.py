@@ -29,7 +29,7 @@ all_domains link domov {
     """,
     "command": "ln test2.txt link2.ln",
     "before": "touch test2.txt",
-    "after": "rm link2.ln",
+    "after": "rm link2.ln test2.txt",
     "output_expect": None,
     "dmesg_expect": "link['test2.txt' --> 'link2.ln']"
 }
@@ -134,7 +134,7 @@ all_domains fork {
 }
     """,
     "command": "./fork",
-    'before': ['sudo cp ' + commons.VM_TPM_PATH + '/fork ' + commons.TESTING_PATH, 'sudo chmod +x ' +
+    'before': ['sudo cp ' + commons.VM_MTE_PATH + '/fork ' + commons.TESTING_PATH, 'sudo chmod +x ' +
                commons.TESTING_PATH + '/fork'],
     "after": "rm fork",
     "output_expect": ['Detsky proces, pid =', 'Rodicovsky proces, pid dietata ='],

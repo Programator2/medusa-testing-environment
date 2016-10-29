@@ -3,3 +3,4 @@ include dependence installation. For now, it is pexpect and paramiko.
 - Think about storing test results in a database. Mongo?
 - Make fork as a python code
 - Add estimated duration for tests
+- Add checkbox for not compiling, or nogdb, checking git

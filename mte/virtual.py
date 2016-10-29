@@ -28,6 +28,7 @@ def start_machine():
         print 'Waiting for boot'
         # Waiting till virtual machine is ready to accept SSH connection
         time.sleep(50)
+        # TODO skusit pingat
     else:
         raise RuntimeError('Unexpected virtual machine state')
 

@@ -131,7 +131,7 @@ def connect(args):
      name of the testing suites to be run.
     """
     try:
-        ssh = Shell('127.0.0.1', 3022, commons.USER_NAME, commons.USER_PASSWORD)
+        ssh = Shell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME, commons.USER_PASSWORD)
     except error as e:
         print e.args[1]
         exit(-1)
@@ -179,7 +179,7 @@ def connect(args):
             break
         else:
             raise RuntimeError('Unrecognized git response')
-    # TODO add else for no Internet connection
+    # # TODO add else for no Internet connection
     # Check if testing environment is located on VM. If not, copy it.
     upload_testing_suite(ssh, args)
     print 'Start of testing procedure'
@@ -188,10 +188,10 @@ def connect(args):
         print 'Sudo is active, no need to input password'
         # Starting without sudo, need to adjust accordingly
         # TODO Change way of accessing sudo
-        ssh.instant_cmd('sudo python3 ' + commons.VM_TPM_PATH + '/testing.py pickled_tests')
+        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests')
     else:
         password = raw_input('Please enter your sudo password to continue: ')
-        ssh.instant_cmd('sudo python3 ' + commons.VM_TPM_PATH + '/testing.py pickled_tests\n' + password)
+        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + password)
     print 'End of testing procedure'
     transport_results(ssh, args[1])
     ssh.close()
@@ -238,27 +238,27 @@ def upload_testing_suite(ssh, tests):
     scp = SCPClient(ssh.ssh.get_transport())
     # These files will be copied from host computer to guest
     files = {'report.py', 'asynchronous_reader.py', 'commons.py', 'testing.py', 'config.py', 'fork', 'validator.py'}
-    path_exists = ssh.exec_cmd('[ -d ' + commons.VM_TPM_PATH + ' ] && echo "True" || echo "False"')
+    path_exists = ssh.exec_cmd('[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"')
     if path_exists.find('False') != -1:
         # create path if it doesn't exist and copy all files without checking diference
         # TODO What if the path is invalid?
-        ssh.exec_cmd('mkdir -p ' + commons.VM_TPM_PATH)
+        ssh.exec_cmd('mkdir -p ' + commons.VM_MTE_PATH)
         for f in files:
-            scp.put(f, commons.VM_TPM_PATH, preserve_times=True)
+            scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
     else:
         for f in files:
-            file_exists = ssh.exec_cmd('[ -f ' + commons.VM_TPM_PATH + '/' + f + ' ] && echo "True" || echo "False"')
+            file_exists = ssh.exec_cmd('[ -f ' + commons.VM_MTE_PATH + '/' + f + ' ] && echo "True" || echo "False"')
             if file_exists.find('True') != -1:
                 local_hash = hashlib.md5(open(f, 'rb').read()).digest()
-                remote_hash = ssh.exec_cmd('md5sum ' + commons.VM_TPM_PATH + '/' + f)
+                remote_hash = ssh.exec_cmd('md5sum ' + commons.VM_MTE_PATH + '/' + f)
                 if remote_hash.find(local_hash) == -1:
-                    scp.put(f, commons.VM_TPM_PATH, preserve_times=True)
+                    scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
             else:
-                scp.put(f, commons.VM_TPM_PATH, preserve_times=True)
+                scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
     # Also upload pickled test names
     with open('pickled_tests', 'wb') as f:
         pickle.dump(tests, f)
-    scp.put('pickled_tests', commons.VM_TPM_PATH, preserve_times=True)
+    scp.put('pickled_tests', commons.VM_MTE_PATH, preserve_times=True)
     scp.close()
 
 
