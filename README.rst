@@ -27,7 +27,7 @@ Superuser settings
 ~~~~~~~~~~~~~~~~~~
 
 Testing environment uses the sudo command extensively and works best if the guest system is configured not to ask for
-the password. You can set this up by adding following line to the /etc/sudoers file:
+the password. You can set this up by adding following line to the /etc/sudoers file::
 
     username    ALL=NOPASSWD: ALL
 
@@ -43,11 +43,13 @@ Without correct information about virtual machine, the setup procedure won't wor
 Install module win32com from http://sourceforge.net/projects/pywin32/
 
 Set environment variables.
-Via PowerShell:
+Via PowerShell::
+
     [Environment]::SetEnvironmentVariable("VBOX_INSTALL_PATH", "C:\Program Files\Oracle\VirtualBox", "Machine")
     [Environment]::SetEnvironmentVariable("VBOX_VERSION", "5.1.8", "Machine")
 
-Run
+Run::
+
     py -2 setup.py install
 
 
@@ -57,7 +59,8 @@ Linux Installation Instructions
 Complete commons.py.sample file and rename it to commons.py.
 Without correct information about virtual machine, the setup procedure won't work.
 
-Run
+Run::
+
     python setup.py install
 
 Configuration of the testing environment
@@ -71,11 +74,13 @@ Usage
 Windows
 ~~~~~~~
 
-Run
+Run::
+
     py -2 mte\\gui.py
 
 Linux
 ~~~~~
 
-Run
+Run::
+
     python mte/gui.py
