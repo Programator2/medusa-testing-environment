@@ -47,7 +47,8 @@ Via PowerShell:
     [Environment]::SetEnvironmentVariable("VBOX_INSTALL_PATH", "C:\Program Files\Oracle\VirtualBox", "Machine")
     [Environment]::SetEnvironmentVariable("VBOX_VERSION", "5.1.8", "Machine")
 
-Run py -2 setup.py install
+Run::
+    py -2 setup.py install
 
 
 Linux Installation Instructions
@@ -56,7 +57,8 @@ Linux Installation Instructions
 Complete commons.py.sample file and rename it to commons.py.
 Without correct information about virtual machine, the setup procedure won't work.
 
-Run python setup.py install
+Run::
+    python setup.py install
 
 Configuration of the testing environment
 ----------------------------------------
@@ -69,9 +71,11 @@ Usage
 Windows
 ~~~~~~~
 
-Run py -2 mte\gui.py
+Run::
+    py -2 mte\\gui.py
 
 Linux
 ~~~~~
 
-Run python mte/gui.py
+Run::
+    python mte/gui.py
