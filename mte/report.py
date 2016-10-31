@@ -49,7 +49,14 @@ class Generator:
     <title>Medusa testing environment report</title>
     <style>
     .ok::after {content: " ✓"}
-    .error::after {content: " ✗"}
+    .error::after {
+        content: "✗";
+        background-color: #e60a0a;
+        padding: 1px 5px;
+        margin: 10px 10px;
+        color: white;
+        font-weight: bold;
+    }
     </style>
     <meta charset="utf-8">
     </head>
@@ -151,7 +158,6 @@ class ConcurrentGenerator(Generator):
         """ Main generator function used to generate report of a concurrent testing suite.
         """
         # Create a subfolder for detailed logs
-        # TODO Color check
         self.create_file()
         self.begin_html()
         for test in self.outputs:

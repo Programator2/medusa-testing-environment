@@ -30,7 +30,7 @@ class Mte(Tk.Frame):
         Tk.Frame.__init__(self, parent, *args, **kwargs)
         self.parent = parent
         self.grid(column=0, row=0, sticky=(Tk.N, Tk.W, Tk.E, Tk.S))
-        self.columnconfigure(0, weight=1)
+        self.columnconfigure(0, weight=0)
         self.rowconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
         self.text = Tk.Text(self)
@@ -45,6 +45,8 @@ class Mte(Tk.Frame):
         self.checkbutton_vars = []
         self.checkbutton_suite_vars = []
         self.create_checkbuttons()
+        self.select_all = ttk.Button(self.calls_frame, text='Select all', command=lambda: self.selection(1))
+        self.deselect_all = ttk.Button(self.calls_frame, text='Deselect all', command=lambda: self.selection(0))
         self.start = ttk.Button(self.left_frame, text='Start testing', command=self.start_testing)
         self.grid_widgets()
 
@@ -59,6 +61,8 @@ class Mte(Tk.Frame):
         self.tests_frame.grid(column=0, row=1, **options)
         for i, checkbutton in enumerate(self.checkbuttons):
             checkbutton.grid(column=0, row=i, **options)
+        self.select_all.grid(column=0, row=i + 1, **options)
+        self.deselect_all.grid(column=0, row=i + 2, **options)
         for i, checkbutton in enumerate(self.checkbuttons_suite):
             checkbutton.grid(column=0, row=i, **options)
         self.start.grid(column=0, row=2, **options)
@@ -67,7 +71,6 @@ class Mte(Tk.Frame):
         """
         Creates checkbuttons for each test and suite
         """
-        # TODO add check uncheck
         for test in tests:
             var = Tk.IntVar()
             var.set(1)
@@ -96,6 +99,15 @@ class Mte(Tk.Frame):
                 suite_list.append(testing_suites[checkbutton['text']])
         tpm.main(test_list, suite_list)
         # TODO Add disable when testing, check for output and decide based on that
+
+    def selection(self, state):
+        """
+        Selects tests checkbuttons
+        @param state: 1 for select all, 0 for deselect all
+        @return: none
+        """
+        for var in self.checkbutton_vars:
+            var.set(state)
 
 
 class StdRedirect(object):

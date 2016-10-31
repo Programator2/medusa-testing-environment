@@ -15,6 +15,7 @@ all_domains symlink domov {
 }
     """,
     "command": "ln -s test.txt link.ln",
+    "before_async": False,
     "before": None,
     "after": "rm link.ln",
     "output_expect": None,
@@ -28,6 +29,7 @@ all_domains link domov {
 }
     """,
     "command": "ln test2.txt link2.ln",
+    "before_async": False,
     "before": "touch test2.txt",
     "after": "rm link2.ln test2.txt",
     "output_expect": None,
@@ -41,6 +43,7 @@ all_domains readlink domov {
 }
     """,
     "command": "ls",
+    "before_async": False,
     "before": ["touch test3.txt", "ln -s test3.txt link3.txt"],
     "after": "rm test3.txt link3.txt",
     "output_expect": None,
@@ -56,6 +59,7 @@ all_domains mkdir domov {
 }
     """,
     "command": "mkdir test",
+    "before_async": False,
     "before": None,
     "after": "rmdir test",
     "output_expect": None,
@@ -69,6 +73,7 @@ all_domains rmdir domov {
 }
     """,
     "command": "rmdir folder",
+    "before_async": False,
     "before": "mkdir folder",
     "after": None,
     "output_expect": None,
@@ -82,6 +87,7 @@ all_domains unlink domov {
 }
     """,
     "command": "unlink file.txt",
+    "before_async": False,
     "before": "touch file.txt",
     "after": None,
     "output_expect": None,
@@ -95,6 +101,7 @@ all_domains rename domov {
 }
     """,
     "command": "mv rename_me renamed",
+    "before_async": False,
     "before": "touch rename_me",
     "after": "rm renamed",
     "output_expect": None,
@@ -108,6 +115,7 @@ all_domains create domov {
 }
     """,
     "command": "touch hello.c",
+    "before_async": False,
     "before": None,
     "after": "rm hello.c",
     "output_expect": None,
@@ -121,6 +129,7 @@ all_domains mknod domov {
 }
     """,
     "command": "mknod fifo p",
+    "before_async": False,
     "before": None,
     "after": "rm fifo",
     "output_expect": None,
@@ -134,6 +143,7 @@ all_domains fork {
 }
     """,
     "command": "./fork",
+    "before_async": False,
     'before': ['sudo cp ' + commons.VM_MTE_PATH + '/fork ' + commons.TESTING_PATH, 'sudo chmod +x ' +
                commons.TESTING_PATH + '/fork'],
     "after": "rm fork",
@@ -148,6 +158,7 @@ all_domains kill all_domains {
 }
     """,
     "command": "killall top",
+    "before_async": True,
     "before": "top",
     "after": None,
     "output_expect": None,

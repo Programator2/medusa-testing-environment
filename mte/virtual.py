@@ -41,7 +41,9 @@ def main(*argv):
     """
     start_machine()
     print 'Starting SSH conection'
-    shell.connect(argv)
+    if (shell.connect(argv) == 1):
+        time.sleep(60)
+        shell.connect(argv)
 
 
 def setup_virtual_pc():

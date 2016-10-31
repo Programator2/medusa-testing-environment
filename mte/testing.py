@@ -159,12 +159,12 @@ def prepare(tests):
     os.chdir(commons.TESTING_PATH)
     for test in tests:
         if config.tests[test]['before'] is not None:
-            # insert to list
+            # TODO insert to list
             if type(config.tests[test]['before']) is str:
-                execute_cmd_async(config.tests[test]['before'])
+                execute_cmd(config.tests[test]['before'], config.tests[test]['before_async'])
             elif type(config.tests[test]['before']) is list:
                 for cmd in config.tests[test]['before']:
-                    execute_cmd_async(cmd)
+                    execute_cmd(cmd, config.tests[test]['before_async'])
 
 
 def do_cleanup(tests):
@@ -178,13 +178,17 @@ def do_cleanup(tests):
             execute_cmd(config.tests[test]['after'])
 
 
-def execute_cmd(cmd):
+def execute_cmd(cmd, async=False):
     """ Executes command on the system and returns output
     @param cmd: Command to be executed
-    @return: Standard output of the executed command
+    @param async: If true, command will be executed asynchronously (function will not wait for it to end)
+    @return: Standard output of the executed command if executed synchronously, nothing if async=True
     >>> execute_cmd('echo This is a test')
     'This is a test\\n'
     """
+    if (async):
+        execute_cmd_async(cmd)
+        return
     process = subprocess.run(shlex.split(cmd), universal_newlines=True, stdout=subprocess.PIPE,
                              stderr=subprocess.STDOUT)
     return process.stdout

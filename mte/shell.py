@@ -152,15 +152,21 @@ def connect(args):
         elif 'Updating' in git_result:
             print 'Medusa was updated.'
             # assume that the newest kernel is automatically the default one
-            compile_command = commons.MEDUSA_PATH + '/build.sh'
+            compile_command = commons.MEDUSA_PATH + '/build.sh --noreboot'
             if commons.NO_GRUB:
-                compile_command += ' --nogrub'
+                compile_command += ' --nogdb'
             if is_kernel_same(ssh):
                 compile_command += ' --medusa-only'
-            ssh.exec_cmd(compile_command)
+            ssh.instant_cmd(compile_command)
+            print 'Kernel compiled'
+            if is_sudo_active(ssh):
+                ssh.channel.send('sudo reboot\n')
+            else:
+                ssh.channel.send('sudo reboot\n' + commons.USER_PASSWORD + '\n')
+            ssh.close()
+            print 'Rebooting the system'
+            return 1
             # TODO Don't save the output, it's too much
-            # TODO Use noreboot
-            # TODO What to do with rewriting old kernel?
         elif 'Please, commmit your changes or stash them before you can merge.' in git_result:
             # TODO Make this selectable at the start of the script
             while True:
@@ -179,7 +185,7 @@ def connect(args):
             break
         else:
             raise RuntimeError('Unrecognized git response')
-    # # TODO add else for no Internet connection
+    # TODO add else for no Internet connection
     # Check if testing environment is located on VM. If not, copy it.
     upload_testing_suite(ssh, args)
     print 'Start of testing procedure'
@@ -190,11 +196,12 @@ def connect(args):
         # TODO Change way of accessing sudo
         ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests')
     else:
-        password = raw_input('Please enter your sudo password to continue: ')
-        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + password)
+        # password = raw_input('Please enter your sudo password to continue: ')
+        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + commons.USER_PASSWORD)
     print 'End of testing procedure'
     transport_results(ssh, args[1])
     ssh.close()
+    return 0
 
 
 def transport_results(ssh, suites):
@@ -278,7 +285,7 @@ def setup_virtual_pc():
     Installs the pexpect module on the virtual machine, for the asynchronous reader to work.
     """
     try:
-        ssh = Shell('127.0.0.1', 3022, commons.USER_NAME, commons.USER_PASSWORD)
+        ssh = Shell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME, commons.USER_PASSWORD)
     except error as e:
         print e.args[1]
         exit(-1)

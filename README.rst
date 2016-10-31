@@ -23,6 +23,14 @@ Host port can be set to any value, but it has to be correctly set in the testing
 
 .. image:: doc/img/port_forwarding.png
 
+Superuser settings
+~~~~~~~~~~~~~~~~~~
+
+Testing environment uses the sudo command extensively and works best if the guest system is configured not to ask for
+the password. You can set this up by adding following line to the /etc/sudoers file:
+
+    username    ALL=NOPASSWD: ALL
+
 Installation instructions
 -------------------------
 
@@ -54,3 +62,16 @@ Configuration of the testing environment
 ----------------------------------------
 
 Configuration constants are available in the commons.py module.
+
+Usage
+-----
+
+Windows
+~~~~~~~
+
+Run py -2 mte\gui.py
+
+Linux
+~~~~~
+
+Run python mte/gui.py
