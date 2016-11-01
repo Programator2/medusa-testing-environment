@@ -23,8 +23,8 @@ Host port can be set to any value, but it has to be correctly set in the testing
 
 .. image:: doc/img/port_forwarding.png
 
-Superuser settings
-~~~~~~~~~~~~~~~~~~
+Superuser settings on the virtual machine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Testing environment uses the sudo command extensively and works best if the guest system is configured not to ask for
 the password. You can set this up by adding following line to the ``/etc/sudoers`` file::
