@@ -26,10 +26,10 @@ def test_director(pickle_location):
     # We need to create configuration file just once
     create_configuration(tests)
     for suite in suites:
-        (results, outputs) = start_suite(tests, suite)
-        (results, outputs) = Validator.validate(results, outputs)
+        (results, outputs, outputs_denied) = start_suite(tests, suite)
+        (results, outputs, outputs_denied) = Validator.validate(results, outputs, outputs_denied)
         print('Generating report for ' + suite)
-        ResultsDirector.generate_results(results, outputs, suite, commons.TESTING_PATH)
+        ResultsDirector.generate_results(results, outputs, outputs_denied, suite, commons.TESTING_PATH)
 
 
 def start_suite(tests, suite_name):
@@ -58,7 +58,7 @@ def start_suite(tests, suite_name):
                                  stdout=subprocess.PIPE).stdout
     # start testing
     print('Starting test batch')
-    (results, outputs) = getattr(sys.modules[__name__], suite_name)(tests, constable)
+    (results, outputs, outputs_denied) = getattr(sys.modules[__name__], suite_name)(tests, constable)
     # end constable
     print('Terminating Constable')
     constable.terminate()
@@ -68,7 +68,7 @@ def start_suite(tests, suite_name):
                                stdout=subprocess.PIPE).stdout
     # TODO Make room for additional information (dmesg_before, dmesg_start and both ends) in the report file
     do_cleanup(tests)
-    return (results, outputs)
+    return (results, outputs, outputs_denied)
 
 
 def create_configuration(tests):
@@ -77,8 +77,8 @@ def create_configuration(tests):
     """
     # create configuration file and save it
     configuration = config.make_config(tests)
-    if not os.path.exists(commons.TESTING_PATH):
-        os.makedirs(commons.TESTING_PATH)
+    if not os.path.exists(commons.TESTING_PATH + '/restricted'):
+        os.makedirs(commons.TESTING_PATH + '/restricted')
     # TODO Check if you can write into it
     print('Creating configuration')
     config_file = open(commons.TESTING_PATH + '/medusa.conf', 'w')
@@ -101,6 +101,7 @@ def do_concurrent_tests(tests, constable):
     # We should create a thread for each test command and lock it. After all tests are ready and constable is started,
     # we release them. Now, there is a change in catching output from constable
     outputs = []
+    outputs_denied = []
     threads = []
     # create a lock
     lock = threading.Lock()
@@ -113,8 +114,18 @@ def do_concurrent_tests(tests, constable):
         os.chdir(commons.TESTING_PATH)
         outputs.append({'test': test, 'output': execute_cmd(config.tests[test]['command'])})
 
+    def testing_thread_denied(test):
+        lock.acquire()
+        lock.release()
+        os.chdir(commons.TESTING_PATH)
+        outputs_denied.append({'test': test, 'output': execute_cmd(config.tests[test]['command_denied'])})
+
     for test in tests:
         new_thread = threading.Thread(name=test, target=testing_thread, args=[test])
+        if 'command_denied' in test:
+            denied_thread = threading.Thread(name=test, target=testing_thread_denied, args=[test])
+            threads.append(denied_thread)
+            denied_thread.start()
         threads.append(new_thread)
         new_thread.start()
 
@@ -127,7 +138,7 @@ def do_concurrent_tests(tests, constable):
                                 stdout=subprocess.PIPE).stdout
     constable_out = constable.read()
     results = {'output': 'Concurrent logs', 'system_log': system_log, 'constable': constable_out}
-    return results, outputs
+    return results, outputs, outputs_denied
 
 
 def do_tests(tests, constable):
@@ -140,14 +151,32 @@ def do_tests(tests, constable):
     os.chdir(commons.TESTING_PATH)
     for test in tests:
         print('Executing test ' + test)
+        result = {}
+
         cmd = config.tests[test]['command']
         output = execute_cmd(cmd)
         time.sleep(1)
         system_log = subprocess.run(shlex.split('sudo dmesg -ce'), universal_newlines=True,
                                     stdout=subprocess.PIPE).stdout
         constable_out = constable.read()
-        results.append({'test': test, 'output': output, 'system_log': system_log, 'constable': constable_out})
-    return results, None
+        result['test'] = test
+        result['output'] = output
+        result['system_log'] = system_log
+        result['constable'] = constable_out
+
+        if 'command_denied' in config.tests[test]:
+            cmd = config.tests[test]['command_denied']
+            output_denied = execute_cmd(cmd)
+            time.sleep(1)
+            system_log_denied = subprocess.run(shlex.split('sudo dmesg -ce'), universal_newlines=True,
+                                        stdout=subprocess.PIPE).stdout
+            constable_out_denied = constable.read()
+            result['output_denied'] = output_denied
+            result['system_log_denied'] = system_log_denied
+            result['constable_denied'] = constable_out_denied
+
+        results.append(result)
+    return results, None, None
 
 
 def prepare(tests):

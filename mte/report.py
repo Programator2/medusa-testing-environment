@@ -10,13 +10,13 @@ class ResultsDirector(object):
     """ Decides which class to use to generate the report based on the suite.
     """
     @staticmethod
-    def generate_results(results, outputs, suite, path):
+    def generate_results(results, outputs, outputs_denied, suite, path):
         """ Executes the generator function of the correct sublass based on the used suite.
         """
         if suite == 'do_tests':
-            generator = SerialGenerator(results, outputs, suite, path)
+            generator = SerialGenerator(results, outputs, outputs_denied, suite, path)
         elif suite == 'do_concurrent_tests':
-            generator = ConcurrentGenerator(results, outputs, suite, path)
+            generator = ConcurrentGenerator(results, outputs, outputs_denied, suite, path)
         else:
             return
         generator.generate_results()
@@ -27,9 +27,10 @@ class Generator:
     Also provides methods for creating a new sub HTML file (used for detailed info on the output) and closing the HTML
     file.
     """
-    def __init__(self, results, outputs, suite, path):
+    def __init__(self, results, outputs, outputs_denied, suite, path):
         self.results = results
         self.outputs = outputs
+        self.outputs_denied = outputs_denied
         self.suite = suite
         self.path = path
         self.file = None
@@ -133,6 +134,33 @@ class SerialGenerator(Generator):
             self.file.write('<li class="error"><a href="result_details/serial.' + test['test'] +
                             '.constable.html">constable</a></li>')
         self.create_subpage(test, 'constable')
+
+        if 'output_denied_valid' in test:
+            # Output from the denied command
+            if test['output_denied_valid']:
+                self.file.write('<li class="ok"><a href="result_details/serial.' + test['test'] +
+                                '.output_denied.html">denied output</a></li>')
+            else:
+                self.file.write('<li class="error"><a href="result_details/serial.' + test['test'] +
+                                '.output_denied.html">denied output</a></li>')
+                # Create new html
+            self.create_subpage(test, 'output_denied')
+            # Create dmesg file for the denied command
+            if test['dmesg_denied_valid']:
+                self.file.write('<li class="ok"><a href="result_details/serial.' + test['test'] +
+                                '.system_log_denied.html">denied dmesg</a></li>')
+            else:
+                self.file.write('<li class="error"><a href="result_details/serial.' + test['test'] +
+                                '.system_log_denied.html">denied dmesg</a></li>')
+            self.create_subpage(test, 'system_log_denied')
+            # Create constable file for the denied command
+            if test['constable_denied_valid']:
+                self.file.write('<li class="ok"><a href="result_details/serial.' + test['test'] +
+                                '.constable_denied.html">denied constable</a></li>')
+            else:
+                self.file.write('<li class="error"><a href="result_details/serial.' + test['test'] +
+                                '.constable_denied.html">denied constable</a></li>')
+            self.create_subpage(test, 'constable_denied')
         self.file.write("</ul>")
 
     def create_subpage(self, test, log):
@@ -162,6 +190,8 @@ class ConcurrentGenerator(Generator):
         self.begin_html()
         for test in self.outputs:
             self.add_row(test)
+        for test in self.outputs_denied:
+            self.add_row(test, denied=True)
         self.file.write('<li><a href="result_details/concurrent.system_log.html">dmesg</a></li>')
         self.file.write('<li><a href="result_details/concurrent.constable.html">constable</a></li>')
         self.create_subpage(self.results, 'system_log')
@@ -169,10 +199,10 @@ class ConcurrentGenerator(Generator):
         self.end_html()
         self.file.close()
 
-    def add_row(self, test):
+    def add_row(self, test, denied=False):
         """ Creates a new bullet point for a test containing the validated outputs.
         """
-        self.file.write("<li>" + test['test'] + "</li><ul>")
+        self.file.write("<li>" + 'denied' if denied else '' + test['test'] + "</li><ul>")
         # Create output file (not needed if output is none)
         if test['output_valid']:
             self.file.write('<li class="ok">output</li>')

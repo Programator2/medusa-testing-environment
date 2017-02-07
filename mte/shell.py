@@ -246,7 +246,7 @@ def upload_testing_suite(ssh, tests):
     # These files will be copied from host computer to guest
     files = {'report.py', 'asynchronous_reader.py', 'commons.py', 'testing.py', 'config.py', 'fork', 'validator.py'}
     path_exists = ssh.exec_cmd('[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"')
-    if path_exists.find('False') != -1:
+    if 'False' in path_exists:
         # create path if it doesn't exist and copy all files without checking diference
         # TODO What if the path is invalid?
         ssh.exec_cmd('mkdir -p ' + commons.VM_MTE_PATH)

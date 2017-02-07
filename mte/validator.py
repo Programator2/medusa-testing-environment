@@ -10,7 +10,7 @@ class Validator:
     properties of tests.
     """
     @classmethod
-    def validate(cls, results, outputs):
+    def validate(cls, results, outputs, outputs_denied):
         """ Decides which validation strategy to choose based on the used suite.
         @param results: List of outputs. Its keys may vary based on the used suite, but it should contain at least
         system_log and constable keys.
@@ -21,8 +21,8 @@ class Validator:
         if outputs is None:
             results = cls.__validate_results(results)
         else:
-            outputs = cls.__validate_concurrent_results(results, outputs)
-        return results, outputs
+            outputs, outputs_denied = cls.__validate_concurrent_results(results, outputs, outputs_denied)
+        return results, outputs, outputs_denied
 
     @staticmethod
     def __validate_results(results):
@@ -38,15 +38,9 @@ class Validator:
         for test in results:
             # Checking the output of commands
             if config.tests[test['test']]['output_expect'] is None:
-                if test['output'] == '':
-                    test['output_valid'] = True
-                else:
-                    test['output_valid'] = False
+                test['output_valid'] = test['output'] == ''
             elif type(config.tests[test['test']]['output_expect']) is str:
-                if test['output'].find(config.tests[test]['test']) != -1:
-                    test['output_valid'] = True
-                else:
-                    test['output_valid'] = False
+                test['output_valid'] = config.tests[test['test']]['output_expect'] in test['output']
             elif type(config.tests[test['test']]['output_expect']) is list:
                 for s in config.tests[test['test']]['output_expect']:
                     if s not in test['output']:
@@ -54,21 +48,35 @@ class Validator:
                         break
                 else:
                     test['output_valid'] = True
+
+            if 'command_denied' in config.tests[test['test']]:
+                if config.tests[test['test']]['output_expect_denied'] is None:
+                    test['output_denied_valid'] = test['output_denied'] == ''
+                elif type(config.tests[test['test']]['output_expect_denied']) is str:
+                    test['output_denied_valid'] = config.tests[test['test']]['output_expect_denied'] in test['output_denied']
+                elif type(config.tests[test['test']]['output_expect_denied']) is list:
+                    for s in config.tests[test['test']]['output_expect_denied']:
+                        if s not in test['output_denied']:
+                            test['output_denied_valid'] = False
+                            break
+                    else:
+                        test['output_denied_valid'] = True
+
+                test['dmesg_denied_valid'] = config.tests[test['test']]['dmesg_expect_denied'] in test['system_log_denied']
+
+                test['constable_denied_valid'] = 'error' not in test['constable_denied']
+
             # Checking the dmesg
-            if config.tests[test['test']]['dmesg_expect'] in test['system_log']:
-                test['dmesg_valid'] = True
-            else:
-                test['dmesg_valid'] = False
+            test['dmesg_valid'] = config.tests[test['test']]['dmesg_expect'] in test['system_log']
+
             # Checking constable
             # TODO case insensitive
-            if 'error' in test['constable']:
-                test['constable_valid'] = False
-            else:
-                test['constable_valid'] = True
+            test['constable_valid'] = 'error' not in test['constable']
+
         return results
 
     @staticmethod
-    def __validate_concurrent_results(results, outputs):
+    def __validate_concurrent_results(results, outputs, outputs_denied):
         """ Used when validating concurrent results. Searches for system call names in dmesg and errors in constable.
         @param results: Dictionary containing dmesg and constable outputs.
         @param outputs: List of dictionaries containing outputs of executed system calls.
@@ -80,15 +88,9 @@ class Validator:
         for out in outputs:
             # Checking the output of commands
             if config.tests[out['test']]['output_expect'] is None:
-                if out['output'] == '':
-                    out['output_valid'] = True
-                else:
-                    out['output_valid'] = False
+                out['output_valid'] = out['output'] == ''
             elif type(config.tests[out['test']]['output_expect']) is str:
-                if out['output'].find(config.tests[out]['test']) != -1:
-                    out['output_valid'] = True
-                else:
-                    out['output_valid'] = False
+                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output']
             elif type(config.tests[out['test']]['output_expect']) is list:
                 for s in config.tests[out['test']]['output_expect']:
                     if s not in out['output']:
@@ -96,15 +98,30 @@ class Validator:
                         break
                 else:
                     out['output_valid'] = True
+
             # Checking the dmesg
-            if config.tests[out['test']]['dmesg_expect'] in results['system_log']:
-                out['dmesg_valid'] = True
-            else:
-                out['dmesg_valid'] = False
+            out['dmesg_valid'] = config.tests[out['test']]['dmesg_expect'] in results['system_log']
             # Checking constable
             # TODO case insensitive
-            if 'error' in results['constable']:
-                out['constable_valid'] = False
-            else:
-                out['constable_valid'] = True
-        return outputs
+            out['constable_valid'] = 'error' not in results['constable']
+
+        for out in outputs_denied:
+            # Checking the output of commands
+            if config.tests[out['test']]['output_expect'] is None:
+                out['output_valid'] = out['output'] == ''
+            elif type(config.tests[out['test']]['output_expect']) is str:
+                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output']
+            elif type(config.tests[out['test']]['output_expect']) is list:
+                for s in config.tests[out['test']]['output_expect']:
+                    if s not in out['output']:
+                        out['output_valid'] = False
+                        break
+                else:
+                    out['output_valid'] = True
+
+            # Checking the dmesg
+            out['dmesg_valid'] = config.tests[out['test']]['dmesg_expect'] in results['system_log']
+            # Checking constable
+            # TODO case insensitive
+            out['constable_valid'] = 'error' not in results['constable']
+        return outputs, outputs_denied
