@@ -70,11 +70,10 @@ all_domains readlink restricted {
     "before": ["touch test3.txt restricted/test3.txt", "ln -s test3.txt link3.txt",
                "ln -s restricted/test3.txt restricted/link3.txt"],
     "after": "rm test3.txt link3.txt restricted/test3.txt restricted/link3.txt",
-    "output_expect": None,
-    # TODO add ignore output
+    "output_expect": "***",
     "dmesg_expect": "allowed-readlink['test3.txt' --> 'link3.txt']",
-    "output_expect_denied_sk": None,
-    "output_expect_denied_en": None,
+    "output_expect_denied_sk": "***",
+    "output_expect_denied_en": "***",
     "dmesg_expect_denied": "denied-readlink['restricted/test3.txt' --> 'restricted/link3.txt']"
 }
 # TODO preview config in html

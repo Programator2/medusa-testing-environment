@@ -21,16 +21,19 @@ def start_machine():
     if machine.state == mgr.constants.all_values('MachineState')['Running']:
         print 'VM is already running'
         pass
-    elif machine.state == mgr.constants.all_values('MachineState')['PoweredOff']:
+    elif machine.state == mgr.constants.all_values('MachineState')['PoweredOff'] or \
+         machine.state == mgr.constants.all_values('MachineState')['Saved']:
+        # TODO split this condition
         progress = machine.launchVMProcess(session, 'gui', '')
         progress.waitForCompletion(-1)
         print 'VM succesfully started'
         print 'Waiting for boot'
         # Waiting till virtual machine is ready to accept SSH connection
         time.sleep(50)
-        # TODO skusit pingat
+        # TODO try ping
     else:
-        raise RuntimeError('Unexpected virtual machine state')
+        raise RuntimeError('Unexpected virtual machine state ' + str(machine.state))
+        # TODO nicer message for the user
 
 
 def main(*argv):

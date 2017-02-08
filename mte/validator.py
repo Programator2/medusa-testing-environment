@@ -40,7 +40,8 @@ class Validator:
             if config.tests[test['test']]['output_expect'] is None:
                 test['output_valid'] = test['output'] == ''
             elif type(config.tests[test['test']]['output_expect']) is str:
-                test['output_valid'] = config.tests[test['test']]['output_expect'] in test['output']
+                test['output_valid'] = config.tests[test['test']]['output_expect'] in test['output'] if \
+                                       config.tests[test['test']]['output_expect'] != '***' else bool(test['output'])
             elif type(config.tests[test['test']]['output_expect']) is list:
                 for s in config.tests[test['test']]['output_expect']:
                     if s not in test['output']:
@@ -53,7 +54,8 @@ class Validator:
                 if config.tests[test['test']]['output_expect_denied'] is None:
                     test['output_denied_valid'] = test['output_denied'] == ''
                 elif type(config.tests[test['test']]['output_expect_denied']) is str:
-                    test['output_denied_valid'] = config.tests[test['test']]['output_expect_denied'] in test['output_denied']
+                    test['output_denied_valid'] = config.tests[test['test']]['output_expect_denied'] in test['output_denied'] if \
+                                                  config.tests[test['test']]['output_expect_denied'] != '***' else bool(test['output_denied'])
                 elif type(config.tests[test['test']]['output_expect_denied']) is list:
                     for s in config.tests[test['test']]['output_expect_denied']:
                         if s not in test['output_denied']:
@@ -90,7 +92,8 @@ class Validator:
             if config.tests[out['test']]['output_expect'] is None:
                 out['output_valid'] = out['output'] == ''
             elif type(config.tests[out['test']]['output_expect']) is str:
-                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output']
+                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output'] if \
+                                      config.tests[out['test']]['output_expect'] != '***' else bool(out['output'])
             elif type(config.tests[out['test']]['output_expect']) is list:
                 for s in config.tests[out['test']]['output_expect']:
                     if s not in out['output']:
@@ -110,7 +113,8 @@ class Validator:
             if config.tests[out['test']]['output_expect'] is None:
                 out['output_valid'] = out['output'] == ''
             elif type(config.tests[out['test']]['output_expect']) is str:
-                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output']
+                out['output_valid'] = config.tests[out['test']]['output_expect'] in out['output'] if \
+                                      config.tests[out['test']]['output_expect'] != '***' else bool(out['output'])
             elif type(config.tests[out['test']]['output_expect']) is list:
                 for s in config.tests[out['test']]['output_expect']:
                     if s not in out['output']:
