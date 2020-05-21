@@ -207,15 +207,15 @@ def do_cleanup(tests):
             execute_cmd(config.tests[test]['after'])
 
 
-def execute_cmd(cmd, async=False):
+def execute_cmd(cmd, is_async=False):
     """ Executes command on the system and returns output
     @param cmd: Command to be executed
     @param async: If true, command will be executed asynchronously (function will not wait for it to end)
-    @return: Standard output of the executed command if executed synchronously, nothing if async=True
+    @return: Standard output of the executed command if executed synchronously, nothing if is_async=True
     >>> execute_cmd('echo This is a test')
     'This is a test\\n'
     """
-    if (async):
+    if (is_async):
         execute_cmd_async(cmd)
         return
     process = subprocess.run(shlex.split(cmd), universal_newlines=True, stdout=subprocess.PIPE,

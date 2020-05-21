@@ -13,7 +13,7 @@ tests['symlink'] = {
     "config": """\
 all_domains symlink allowed {
     log_proc("allowed-symlink['"+oldname+"' --> '"+filename+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains symlink restricted {
     log_proc("denied-symlink['"+oldname+"' --> '"+filename+"']");
@@ -28,14 +28,14 @@ all_domains symlink restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-symlink['test.txt' --> 'link.ln']",
     "output_expect_denied_sk": "ln: failed to create symbolic link 'restricted/link.ln': Operácia nie je povolená",
-    "output_expect_denied_en": "ln: failed to create symbolic link 'restricted/link.ln': Operation not permitted",
+    "output_expect_denied_en": "ln: failed to create symbolic link 'restricted/link.ln': Permission denied",
     "dmesg_expect_denied": "denied-symlink['restricted/test.txt' --> 'link.ln']"
 }
 tests['link'] = {
     "config": """\
 all_domains link allowed {
     log_proc("allowed-link['"+filename+"' --> '"+newname+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains link restricted {
     log_proc("denied-link['"+filename+"' --> '"+newname+"']");
@@ -50,14 +50,14 @@ all_domains link restricted {
     "output_expect": None,
     "dmesg_expect": "link['test2.txt' --> 'link2.ln']",
     "output_expect_denied_sk": "ln: failed to create hard link 'restricted/link2.ln' => 'restricted/test2.txt': Operácia nie je povolená",
-    "output_expect_denied_en": "ln: failed to create hard link 'restricted/link2.ln' => 'restricted/test2.txt': Operation not permitted",
+    "output_expect_denied_en": "ln: failed to create hard link 'restricted/link2.ln' => 'restricted/test2.txt': Permission denied",
     "dmesg_expect_denied": "denied-link['test2.txt' --> 'link2.ln']"
 }
 tests['readlink'] = {
     "config": """\
 all_domains readlink allowed {
     log_proc("allowed-readlink['"+filename+"' --> '"+newname+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains readlink restricted {
     log_proc("denied-readlink['"+filename+"' --> '"+newname+"']");
@@ -81,7 +81,7 @@ tests['mkdir'] = {
     "config": """\
 all_domains mkdir allowed {
     log_proc("allowed-mkdir['"+filename+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains mkdir restricted {
     log_proc("denied-mkdir['"+filename+"']");
@@ -96,14 +96,14 @@ all_domains mkdir restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-mkdir['test']",
     "output_expect_denied_sk": "mkdir: nie je možné vytvoriť adresár `restricted/test': Operácia nie je povolená",
-    "output_expect_denied_en": "mkdir: cannot create directory ‘restricted/test’: Operation not permitted",
+    "output_expect_denied_en": "mkdir: cannot create directory ‘restricted/test’: Permission denied",
     "dmesg_expect_denied": "denied-mkdir['test']"
 }
 tests['rmdir'] = {
     "config": """\
 all_domains rmdir allowed {
     log_proc("allowed-rmdir['"+filename+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains rmdir restricted {
     log_proc("denied-rmdir['"+filename+"']");
@@ -118,14 +118,14 @@ all_domains rmdir restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-rmdir['folder']",
     "output_expect_denied_sk": "rmdir: nepodarilo sa odstrániť 'restricted/folder': Operácia nie je povolená",
-    "output_expect_denied_en": "rmdir: failed to remove 'restricted/folder': Operation not permitted",
+    "output_expect_denied_en": "rmdir: failed to remove 'restricted/folder': Permission denied",
     "dmesg_expect_denied": "denied-rmdir['folder']"
 }
 tests['unlink'] = {
     "config": """\
 all_domains unlink allowed {
     log_proc("allowed-unlink['"+filename+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains unlink restricted {
     log_proc("denied-unlink['"+filename+"']");
@@ -140,14 +140,14 @@ all_domains unlink restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-unlink['file.txt']",
     "output_expect_denied_sk": "unlink: nie je možné odpojiť (unlink) 'restricted/file.txt': Operácia nie je povolená",
-    "output_expect_denied_en": "unlink: cannot unlink 'restricted/file.txt': Operation not permitted",
+    "output_expect_denied_en": "unlink: cannot unlink 'restricted/file.txt': Permission denied",
     "dmesg_expect_denied": "denied-unlink['file.txt']"
 }
 tests['rename'] = {
     "config": """\
 all_domains rename allowed {
     log_proc("allowed-rename['"+filename+"' --> '"+newname+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains rename restricted {
     log_proc("denied-rename['"+filename+"' --> '"+newname+"']");
@@ -162,14 +162,14 @@ all_domains rename restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-rename['rename_me' --> 'renamed']",
     "output_expect_denied_sk": "mv: cannot move 'restricted/rename_me' to 'restricted/renamed': Operácia nie je povolená",
-    "output_expect_denied_en": "mv: cannot move 'restricted/rename_me' to 'restricted/renamed': Operation not permitted",
+    "output_expect_denied_en": "mv: cannot move 'restricted/rename_me' to 'restricted/renamed': Permission denied",
     "dmesg_expect_denied": "denied-rename['rename_me' --> 'renamed']"
 }
 tests['create'] = {
     "config": """\
 all_domains create allowed {
     log_proc("allowed-create['" + filename + " " + mode + "']");
-    return ALLOW;
+    return OK;
 }
 all_domains create restricted {
     log_proc("denied-create['" + filename + " " + mode + "']");
@@ -191,7 +191,7 @@ tests['mknod'] = {
     "config": """\
 all_domains mknod allowed {
     log_proc("allowed-mknod['"+filename+" "+uid+" "+gid+"']");
-    return ALLOW;
+    return OK;
 }
 all_domains mknod restricted {
     log_proc("denied-mknod['"+filename+" "+uid+" "+gid+"']");
@@ -206,14 +206,14 @@ all_domains mknod restricted {
     "output_expect": None,
     "dmesg_expect": "allowed-mknod['fifo 0 0']",
     "output_expect_denied_sk": "mknod: restricted/fifo: Operácia nie je povolená",
-    "output_expect_denied_en": "mknod: restricted/fifo: Operation not permitted",
+    "output_expect_denied_en": "mknod: restricted/fifo: Permission denied",
     "dmesg_expect_denied": "denied-mknod['fifo 0 0']"
 }
 tests['fork'] = {
     "config": """\
 all_domains fork {
     log("fork");
-    return ALLOW;
+    return OK;
 }
     """,
     "command": "./fork",
@@ -228,7 +228,7 @@ tests['kill'] = {
     "config": """\
 all_domains kill all_domains {
     log("kill");
-    return ALLOW;
+    return OK;
 }
     """,
     "command": "killall top",
