@@ -145,8 +145,8 @@ def connect(args):
     ssh.exec_cmd('cd ' + commons.MEDUSA_PATH)
     git_result = ssh.exec_cmd('git pull')
     while True:
-        if 'Already up-to-date.' in git_result:
-            print 'Medusa is up-to-date.'
+        if 'Already up to date.' in git_result:
+            print 'Medusa is up to date.'
             break
             # continue
         elif 'Updating' in git_result:
