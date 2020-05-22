@@ -1,14 +1,15 @@
 # -*- coding: utf-8 -*-
-"""@package mte.gui
+"""
+@package mits.gui
 Graphical user interface for Medusa Testing Environment
 """
-import Tkinter as Tk
+import tkinter as Tk
 import sys
-import ttk as ttk
+from tkinter import ttk
 
 import tpm
-from commons.config import testing_suites
-from commons.config import tests
+from config import testing_suites
+from config import tests
 
 
 # mainframe = Frame(root, padding="3 3 12 12")
@@ -120,7 +121,9 @@ class StdRedirect(object):
     def write(self, string):
         self.widget.insert(Tk.END, string)
         self.widget.see(Tk.END)
-    # TODO How about some interaction?
+
+    def flush(self):
+        pass
 
 if __name__ == "__main__":
     root = Tk.Tk()

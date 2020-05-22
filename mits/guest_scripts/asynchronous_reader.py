@@ -1,4 +1,5 @@
-"""@package mte.asynchronous_reader
+"""
+@package mits.asynchronous_reader
 Used for asynchronously reading a command. Uses a virtual terminal for unbuffered, immediate output.
 """
 import queue

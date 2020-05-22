@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""@package mte.commons
+"""
+@package mits.commons
 Contains definitions of tests and contents of a config file which is used for Constable when testing.
 """
 import commons

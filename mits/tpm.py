@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-"""@package mte.tpm
+"""
+@package mits.tpm
 Prepares new thread for starting the virtual machine
 """
 import threading

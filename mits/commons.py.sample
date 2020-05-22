@@ -1,4 +1,4 @@
-"""@package mte.commons
+"""@package mits.commons
 Constants for setting up the testing environment
 All paths except for the last one (OUTPUT_PATH)
 are located on the virtual machine.

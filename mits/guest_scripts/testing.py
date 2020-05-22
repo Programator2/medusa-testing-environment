@@ -1,4 +1,5 @@
-"""@package mte.testing
+"""
+@package mits.testing
 This module executes tests and testing suites
 """
 import os

@@ -1,4 +1,5 @@
-"""@package mte.validator
+"""
+@package mits.validator
 Validates outputs of executed test suites.
 """
 import config
