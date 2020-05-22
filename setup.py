@@ -37,4 +37,3 @@ setup(name='mte',
       zip_safe=True,
       include_package_data=True,
       cmdclass={'install': MyInstall})
-

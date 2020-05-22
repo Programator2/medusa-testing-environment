@@ -1,17 +1,22 @@
-Medusa Testing Environment
+Medusa Integration Testing System
 ==========================
+
+About
+-----
+Medusa Integration Testing System (MITS) is based on MTE (Medusa Testing Environment) developed by Roderik Ploszek in 2016.
+Link: https://github.com/Programator2/medusa-testing-environment
 
 Prerequisites
 -------------
 
-*Medusa Testing Environment* works on a *VirtualBox* virtual machine with a functional *Medusa* security module.
+*Medusa Integration Testing System* works on a *VirtualBox* virtual machine with a functional *Medusa* security module.
 We recommend the newest version of *VirtualBox*.
 For *Medusa* testing and development, we recommend the *Debian* distribution, specifically the Testing distribution that offers a compromise between new versions of packages and stability.
 
 Network settings of the virtual machine
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Medusa testing environment* communicates with the virtual machine using SSH protocol.
+*Medusa Integration Testing System* communicates with the virtual machine using SSH protocol.
 Make sure that virtual machine has functional SSH server.
 SSH server is provided by the ``openssh-server`` package on *Debian* distribution.
 

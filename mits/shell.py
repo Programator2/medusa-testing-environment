@@ -11,7 +11,7 @@ from socket import error
 import paramiko
 from scp import SCPClient
 
-import commons
+from commons import commons
 
 
 class Shell:
@@ -244,7 +244,10 @@ def upload_testing_suite(ssh, tests):
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     scp = SCPClient(ssh.ssh.get_transport())
     # These files will be copied from host computer to guest
-    files = {'report.py', 'asynchronous_reader.py', 'commons.py', 'testing.py', 'config.py', 'fork', 'validator.py'}
+    files = {'guest_scripts/report.py', 'guest_scripts/asynchronous_reader.py',
+            'commons/commons.py', 'guest_scripts/testing.py',
+            'commons/config.py', 'guest_scripts/fork',
+            'guest_scripts/validator.py'}
     path_exists = ssh.exec_cmd('[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"')
     if 'False' in path_exists:
         # create path if it doesn't exist and copy all files without checking diference

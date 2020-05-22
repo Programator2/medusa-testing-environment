@@ -7,8 +7,8 @@ import sys
 import ttk as ttk
 
 import tpm
-from config import testing_suites
-from config import tests
+from commons.config import testing_suites
+from commons.config import tests
 
 
 # mainframe = Frame(root, padding="3 3 12 12")

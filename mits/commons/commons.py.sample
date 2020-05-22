@@ -17,14 +17,14 @@ VM_PORT - Port of the ssh server on the virtual machine (or port on a forwarded 
 NO_GRUB - If true, it compiles the kernel without waiting for the debugger
 OUTPUT_PATH - Folder where to put testing outputs (on local machine)
 """
-MEDUSA_PATH = '/home/user/medusa/linux-medusa'
-CONSTABLE_PATH = '/home/user/constable/Constable'
-VM_MTE_PATH = '/home/user/mte_scripts'
-TESTING_PATH = '/home/user/mte_testing'
-VM_NAME = 'Debian Medusa'
-USER_NAME = 'user'
-USER_PASSWORD = 'password'
+MEDUSA_PATH = '<path/to/medusa/dir>'
+CONSTABLE_PATH = '<path/to/constable>'
+VM_MTE_PATH = '<path/to/scripts/destination>'
+TESTING_PATH = '<path/to/testing/dir>'
+VM_NAME = '<computer-name>'
+USER_NAME = '<username>'
+USER_PASSWORD = '<password>'
 VM_IP = '127.0.0.1'
 VM_PORT = 3022
 NO_GRUB = True
-OUTPUT_PATH = 'C:/Users/User/Desktop'
+OUTPUT_PATH = '<path/to/host/machine/output/dir>'

@@ -60,3 +60,12 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Generated tests
+mits/pickled_tests
+
+# Testing output
+testing_out
+
+# Custom configuration
+mits/commons.py
