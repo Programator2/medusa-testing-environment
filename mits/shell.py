@@ -6,6 +6,7 @@ Controls communication with a virtual machine through SSH protocol
 import hashlib
 import os
 import pickle
+from glob import glob
 from socket import error
 
 import paramiko
@@ -202,7 +203,7 @@ def connect(args):
         # password = raw_input('Please enter your sudo password to continue: ')
         ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + commons.USER_PASSWORD)
     print('End of testing procedure')
-    transport_results(ssh, args[1])
+    #transport_results(ssh, args[1])
     ssh.close()
     return 0
 
@@ -247,10 +248,10 @@ def upload_testing_suite(ssh, tests):
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     scp = SCPClient(ssh.ssh.get_transport())
     # These files will be copied from host computer to guest
-    files = {'guest_scripts/report.py', 'guest_scripts/asynchronous_reader.py',
-             'commons.py', 'guest_scripts/testing.py',
-             'config.py', 'guest_scripts/fork',
-             'guest_scripts/validator.py'}
+    test_files = glob('tests/*.py')
+    guest_files = glob('guest_scripts/*')
+    common_files = ['commons.py', 'config.py', 'shell_answers.py']
+    files = test_files + guest_files + common_files
     path_exists = ssh.exec_cmd('[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"')
     if 'False' in path_exists:
         # create path if it doesn't exist and copy all files without checking diference
@@ -263,7 +264,6 @@ def upload_testing_suite(ssh, tests):
             file_exists = ssh.exec_cmd('[ -f ' + commons.VM_MTE_PATH + '/' + f + ' ] && echo "True" || echo "False"')
             if file_exists.find('True') != -1:
                 local_hash = hashlib.md5(open(f, 'rb').read()).hexdigest()
-                print(type(local_hash))
                 remote_hash = ssh.exec_cmd('md5sum ' + commons.VM_MTE_PATH + '/' + f)
                 if remote_hash.find(local_hash) == -1:
                     scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
