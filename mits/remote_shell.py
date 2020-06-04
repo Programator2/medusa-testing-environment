@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-@package mits.shell
+@package mits.remote_shell
 Controls communication with a virtual machine through SSH protocol
 """
 import hashlib
 import os
 import pickle
-from glob import glob
-from socket import error
-
 import paramiko
-from scp import SCPClient
-
 import commons
 
+from glob import glob
+from socket import error
+from logger import log_host
+from scp import SCPClient
 
-class Shell:
+
+class RemoteShell:
     def __init__(self, ip, port, username, password):
         """
         Creates a new SSH connection and determines prompt.
@@ -23,7 +23,7 @@ class Shell:
         @param port: Port of the server to connect to.
         @param username: Username
         @param password: Password of the chosen user.
-        @return: Shell object.
+        @return: RemoteShell object.
         """
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -112,7 +112,7 @@ class Shell:
                 # this we will have to wait until a newline
                 # TODO comes and then we can decide if we want to print it or not.
                 if new_data.find('[TPM]$ ') == -1 and new_data != '':
-                    print(new_data)
+                    log_host(new_data)
             else:
                 continue
             if channel_data.endswith(self.prompt):
@@ -134,27 +134,27 @@ def connect(args):
     to be tested and second one contains name of the testing suites to be run.
     """
     try:
-        ssh = Shell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME,
+        ssh = RemoteShell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME,
                     commons.USER_PASSWORD)
     except error as e:
-        print(e.args[1])
+        log_host(e.args[1])
         exit(-1)
         return
     except paramiko.ssh_exception.AuthenticationException as e:
-        print(e.message)
+        log_host(e.message)
         exit(-1)
         return
     # Downloading new version from repository
-    print('Checking for new version of Medusa (this may take a while)')
+    log_host('Checking for new version of Medusa (this may take a while)')
     ssh.exec_cmd('cd ' + commons.MEDUSA_PATH)
     git_result = ssh.exec_cmd('git pull')
     while True:
         if 'Already up to date.' in git_result:
-            print('Medusa is up to date.')
+            log_host('Medusa is up to date.')
             break
             # continue
         elif 'Updating' in git_result:
-            print('Medusa was updated.')
+            log_host('Medusa was updated.')
             # assume that the newest kernel is automatically the default one
             compile_command = commons.MEDUSA_PATH + '/build.sh --noreboot'
             if commons.NO_GRUB:
@@ -162,13 +162,13 @@ def connect(args):
             if is_kernel_same(ssh):
                 compile_command += ' --medusa-only'
             ssh.instant_cmd(compile_command)
-            print('Kernel compiled')
+            log_host('Kernel compiled')
             if is_sudo_active(ssh):
                 ssh.channel.send('sudo reboot\n')
             else:
                 ssh.channel.send('sudo reboot\n' + commons.USER_PASSWORD + '\n')
             ssh.close()
-            print('Rebooting the system')
+            log_host('Rebooting the system')
             return 1
             # TODO Don't save the output, it's too much
         elif 'Please, commmit your changes or stash them before you can merge.' in git_result:
@@ -185,24 +185,24 @@ def connect(args):
             git_result = ssh.exec_cmd('git pull')
             continue
         elif 'fatal: unable to access' in git_result:
-            print("Couldn't connect to git. Continuing with current version.")
+            log_host("Couldn't connect to git. Continuing with current version.")
             break
         else:
             raise RuntimeError('Unrecognized git response')
     # TODO add else for no Internet connection
     # Check if testing environment is located on VM. If not, copy it.
     upload_testing_suite(ssh, args)
-    print('Start of testing procedure')
+    log_host('Start of testing procedure')
     # TODO Implement a bit safer version with sudo -k, with more attempts than just one and with better output control
     if is_sudo_active(ssh):
-        print('Sudo is active, no need to input password')
+        log_host('Sudo is active, no need to input password')
         # Starting without sudo, need to adjust accordingly
         # TODO Change way of accessing sudo
         ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests')
     else:
         # password = raw_input('Please enter your sudo password to continue: ')
         ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + commons.USER_PASSWORD)
-    print('End of testing procedure')
+    log_host('End of testing procedure')
     #transport_results(ssh, args[1])
     ssh.close()
     return 0
@@ -247,13 +247,19 @@ def upload_testing_suite(ssh, tests):
     # print os.path.realpath(__file__)
     os.chdir(os.path.dirname(os.path.realpath(__file__)))
     scp = SCPClient(ssh.ssh.get_transport())
+
     # These files will be copied from host computer to guest
-    test_files = glob('tests/*.py')
-    guest_files = glob('guest_scripts/*')
-    common_files = ['commons.py', 'config.py', 'shell_answers.py']
-    files = test_files + guest_files + common_files
-    path_exists = ssh.exec_cmd('[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"')
-    if 'False' in path_exists:
+    guest_files = glob('guest_scripts/*py')
+    guest_files.extend(glob('guest_scripts/tests/*py'))
+    guest_files.extend(glob('guest_scripts/*bin'))
+    guest_files.extend(glob('guest_scripts/configs/constable/*'))
+    common_files = ['commons.py', 'config.py', 'logger.py']
+    files = guest_files + common_files
+    log_host(f"Transferred files {files}")
+
+    path_exists_expression = '[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"'
+    path_exists = ssh.exec_cmd(path_exists_expression)
+    if path_exists == 'False':
         # create path if it doesn't exist and copy all files without checking diference
         # TODO What if the path is invalid?
         ssh.exec_cmd('mkdir -p ' + commons.VM_MTE_PATH)
@@ -292,18 +298,14 @@ def setup_virtual_pc():
     Installs the pexpect module on the virtual machine, for the asynchronous reader to work.
     """
     try:
-        ssh = Shell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME, commons.USER_PASSWORD)
+        ssh = RemoteShell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME, commons.USER_PASSWORD)
     except error as e:
-        print(e.args[1])
+        log_host(e.args[1])
         exit(-1)
         return
     except paramiko.ssh_exception.AuthenticationException as e:
-        print(e.message)
+        log_host(e.message)
         exit(-1)
         return
     ssh.instant_cmd('python3 -m pip install pexpect')
-    # ssh.exec_cmd('sudo init 0')
     ssh.close()
-
-# if __name__ == '__main__':
-#     connect('test')

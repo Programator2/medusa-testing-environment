@@ -2,7 +2,7 @@ import shlex
 import subprocess
 
 
-class LocalShell():
+class LocalShell:
     def execute_cmd(self, cmd, is_async=False):
         """ Executes command on the system and returns output
         @param cmd: Command to be executed

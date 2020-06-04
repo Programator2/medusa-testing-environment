@@ -1,4 +1,4 @@
-class MedusaTestBase():
+class MedusaTestBase:
     def __init__(self):
         return NotImplementedError()
 

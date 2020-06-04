@@ -4,19 +4,17 @@ This module executes tests and testing suites
 """
 import os
 import pickle
-#import shlex
 #import subprocess
 #import threading
-#import time
+import time
 import sys
 import tabulate
-
 import commons
-import config
+import test_registrator as TestRegistrator
 from asynchronous_reader import Reader
-from report import ResultsDirector
-from mkdir_tests import MkdirTest
-from local_shell import LocalShell
+#from report import ResultsDirector
+from logger import log_guest
+import path_injector as PathInjector
 
 
 def test_director(pickle_location):
@@ -25,25 +23,35 @@ def test_director(pickle_location):
     Based on the selected tests, it creates configuration for Constable.
     @param pickle_location: File name of the pickled test information
     """
-
     def unpickle_tests(tests_path):
-        """ Reads pickled tests from test_path, which were pickled by host system.
+        """
+        Reads pickled tests from test_path, which were pickled by host system.
         @param tests_path: Full path to the pickled data file.
-        @return: Pickled data. It should be tuple of lists containing names of the tests and suites, respectively.
+        @return: Pickled data. It should be tuple of lists containing names of
+        the tests and suites, respectively.
         """
         with open(tests_path, 'rb') as f:
             return pickle.load(f, fix_imports=True)
 
+    TestRegistrator.register_suites()
+
     # Unpickle test information that was prepared by hosting computer
-    (tests, suites) = unpickle_tests(os.path.join(commons.VM_MTE_PATH, pickle_location))
-    print(f"Send tests are {tests}")
-    # We need to create configuration file just once
-    create_configuration(tests)
+    pickle_tests_path = os.path.join(commons.VM_MTE_PATH, pickle_location)
+    (test_suite_names, suites) = unpickle_tests(pickle_tests_path)
+    log_guest(f"Received test suites are {test_suite_names}")
+
+    if(not TestRegistrator.contains_all_suites(test_suite_names)):
+        raise ValueError(f"Guest: invalid suite name in {test_suite_names}")
+
+    test_classes = TestRegistrator.get_test_classes_from(test_suite_names)
+
+    make_authserver_config()
+    make_final_config(test_suite_names)
     for suite in suites:
-        (results, outputs, outputs_denied) = start_suite(tests, suite)
+        (results, outputs, outputs_denied) = start_suite(test_classes, suite)
         print_class_report(results)
-        #print(f'Generating report for {suite}')
         #ResultsDirector.generate_results(results, outputs, outputs_denied, suite, commons.TESTING_PATH)
+
 
 def print_class_report(results):
     headers = ['Test name', 'Is passed']
@@ -53,37 +61,39 @@ def print_class_report(results):
 
 def start_suite(tests, suite_name):
     """
-    Main testing function, starts Constable and executes tests one after the other. When
-    all testing is done, results are sent to the validator module to be validated.
+    Main testing function, starts Constable and executes tests one after the
+    other. When all testing is done, results are sent to the validator module
+    to be validated.
     @param tests: List of system calls to be tested and called
-    @param suite_name: Name of the suite. Currently two types of suites are supported: sequential (do_tests)
+    @param suite_name: Name of the suite. Currently two types of suites are
+    supported: sequential (do_tests)
     and concurrent (do_concurrent_tests)
-    @return: Tuple of results and outputs. Outputs list is included only in concurrent suite, otherwise it's None.
+    @return: Tuple of results and outputs. Outputs list is included only in
+    concurrent suite, otherwise it's None.
     """
-    local_shell = LocalShell()
-    mkdir_tests = [ MkdirTest(local_shell) ]
     # clean dmesg before starting Constable
     #dmesg_before = subprocess.run(shlex.split('sudo dmesg -ce'), universal_newlines=True,
     #                              stdout=subprocess.PIPE).stdout
 
     # TODO Decide what to do with dmesg_before (maybe filter it for medusa messages?)
     # start constable and save its standard output
-    print('Starting Constable')
+    log_guest('Starting Constable')
+    # TODO prepare /constable.conf
     constable = Reader('sudo constable ' + commons.TESTING_PATH + '/constable.conf')
     # Catch first outputs and save them independently to testing outputs
 
     time.sleep(1)
-    print('Reading Constable')
+    log_guest('Reading Constable')
     constable_start = constable.read()
 
-    print('Running dmesg')
-    #dmesg_start = subprocess.run(shlex.split('sudo dmesg -ce'), universal_newlines=True,
+    log_guest('Running dmesg')
+    #dmesg_start = subprocess.run(('sudo dmesg -ce').split(), universal_newlines=True,
     #                             stdout=subprocess.PIPE).stdout
 
-    print('Starting test batch')
-    (results, outputs, outputs_denied) = getattr(sys.modules[__name__], suite_name)(mkdir_tests, constable)
+    log_guest('Starting test batch')
+    (results, outputs, outputs_denied) = getattr(sys.modules[__name__], suite_name)(tests, constable)
 
-    print('Terminating Constable')
+    log_guest('Terminating Constable')
     constable.terminate()
 
     time.sleep(1)
@@ -94,34 +104,56 @@ def start_suite(tests, suite_name):
     return (results, outputs, outputs_denied)
 
 
-def create_configuration(tests):
+def make_authserver_config():
+    log_guest('Creating configuration for authserver /constable.conf')
+    old_config_path = f'{commons.VM_MTE_PATH}/constable.conf'
+    new_config_path = f'{commons.TESTING_PATH}/constable.conf'
+    with open(new_config_path, 'w') as config_out:
+        with open(old_config_path, "r") as config_file:
+            config_content = config_file.read()
+            config_content = PathInjector.inject_paths(config_content)
+            config_out.write(config_content)
+
+
+def make_final_config(tests):
     """
-    Creates and saves configuration file based on chosen system calls.
-    @param tests: List of system calls to be executed during testing.
+    Creates configuration file based on chosen testing classes.
+    @param tests: List of test classes from which tests should be executed
+    during testing.
     """
+    def get_required_configs():
+        config_filenames = [f'{commons.VM_MTE_PATH}/basic.conf']
+        print(config_filenames)
+        for test in tests:
+            config_filenames.append(f'{commons.VM_MTE_PATH}/{test}.conf')
+
+        return config_filenames
+
+    log_guest('Creating configuration /medusa.conf')
+    config_filenames = get_required_configs()
+    with open(f'{commons.TESTING_PATH}/medusa.conf', 'w') as config_out:
+        for config_filename in config_filenames:
+            with open(config_filename, "r") as config_file:
+                config_content = config_file.read()
+                config_content = PathInjector.inject_paths(config_content)
+                config_out.write(config_content)
+
     # create configuration file and save it
-    configuration = config.make_config(tests)
     if not os.path.exists(commons.TESTING_PATH + '/restricted'):
         os.makedirs(commons.TESTING_PATH + '/restricted')
     # TODO Check if you can write into it
-    print('Creating configuration')
-    config_file = open(commons.TESTING_PATH + '/medusa.conf', 'w')
-    config_file.write(configuration)
-    config_file.close()
-    # create constable configuration file that refers to medusa.conf
-    config_file = open(commons.TESTING_PATH + '/constable.conf', 'w')
-    config_file.write(config.constable_config)
-    config_file.close()
+
 
 def class_tests(test_classes, constable):
     results = {}
     for test_class in test_classes:
         tests = test_class.tests
         for test_name, test_case in tests.items():
-            print(f'Executing test {test_name}: {test_case}')
+            log_guest(f'Executing test {test_name}: {test_case}')
             results[test_name] = str(test_case())
 
     return (results, None, None)
+
 
 """
 For now it is not used, it will be removed later
@@ -187,7 +219,7 @@ For now it is not used, it will be removed later
 #    results = []
 #    os.chdir(commons.TESTING_PATH)
 #    for test in tests:
-#        print('Executing test ' + test)
+#        log_guest('Executing test ' + test)
 #        result = {}
 #
 #        cmd = config.tests[test]['command']

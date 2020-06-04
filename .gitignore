@@ -69,3 +69,6 @@ testing_out
 
 # Custom configuration
 mits/commons.py
+
+# ctags
+tags

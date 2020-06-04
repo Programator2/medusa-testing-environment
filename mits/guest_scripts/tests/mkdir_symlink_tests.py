@@ -1,4 +1,4 @@
-class Mkdir_Symlink_Tests():
+class Mkdir_Symlink_Tests:
     def __init__(self):
         pass
 

@@ -1,7 +1,7 @@
 from shell_answers import ShellAnswer
 
 
-class MkdirTest():
+class MkdirTests:
     def __init__(self, ssh_session):
         self.tests = {
             'mkdir_allow': self.mkdir_allow,

@@ -30,8 +30,7 @@ all_domains symlink restricted {
     "dmesg_expect": "allowed-symlink['test.txt' --> 'link.ln']",
     "output_expect_denied_sk": "ln: failed to create symbolic link 'restricted/link.ln': Operácia nie je povolená",
     "output_expect_denied_en": "ln: failed to create symbolic link 'restricted/link.ln': Permission denied",
-    "dmesg_expect_denied": "denied-symlink['restricted/test.txt' --> 'link.ln']"
-}
+    "dmesg_expect_denied": "denied-symlink['restricted/test.txt' --> 'link.ln']" }
 tests['link'] = {
     "config": """\
 all_domains link allowed {
@@ -78,7 +77,7 @@ all_domains readlink restricted {
     "dmesg_expect_denied": "denied-readlink['restricted/test3.txt' --> 'restricted/link3.txt']"
 }
 # TODO preview config in html
-tests['mkdir'] = {
+tests['MkdirTest'] = {
     "config": """\
 all_domains mkdir allowed {
     log_proc("allowed-mkdir['"+filename+"']");
@@ -239,54 +238,12 @@ all_domains kill all_domains {
     "output_expect": None,
     "dmesg_expect": "kill"
 }
-beginning = """\
-tree	"fs" clone of file by getfile getfile.filename;
-primary tree "fs";
-tree	"domain" of process;
 
-space all_domains = recursive "domain";
-space all_files	= recursive "/"
-                  - recursive "%(allowed)s";
-space allowed =   recursive "%(allowed)s"
-                  - recursive "%(restricted)s";
-space restricted = recursive "%(restricted)s";
-
-all_domains     ENTER   all_domains,
-                READ    all_domains, all_files, allowed, restricted,
-                WRITE   all_domains, all_files, allowed, restricted,
-                SEE     all_domains, all_files, allowed, restricted;
-
-function log
-{
-    local printk buf.message=$1 + "\\n";
-    update buf;
-}
-
-function log_proc {
-    log ("" + $1 + " pid="+process.pid+" domain="+primaryspace(process,@"domain")
-        +" uid="+process.uid+" luid="+process.luid +" euid="+process.euid+" suid="+process.suid
-        +" pcap="+process.pcap+" icap="+process.icap+" ecap="+process.ecap
-        +" med_sact="+process.med_sact+" vs=["+spaces(process.vs)+"] vsr=["+spaces(process.vsr)+"] vsw=["
-        +spaces(process.vsw)+"] vss=["+spaces(process.vss)+"]"
-        +" cmdline="+process.cmdline
-//      +" sync-trace=["+process.syscall+"]"
-    );
-}
-* getprocess {
-    enter(process,@"domain/init");
-    log_proc("getprocess");
-    return OK;
-}
-function _init {}
-""" % {'allowed': commons.TESTING_PATH, 'restricted': commons.TESTING_PATH + '/restricted'}
-
-constable_config = 'config "' + commons.TESTING_PATH + '/medusa.conf";' + '\n"test" file "/dev/medusa";'
-
-current_locale = locale.getdefaultlocale()[0][:2]
-print('Using ' + current_locale + ' locale for outputs')
-for key, value in tests.items():
-    if 'command_denied' in value:
-        tests[key]['output_expect_denied'] = value['output_expect_denied_' + current_locale]
+#current_locale = locale.getdefaultlocale()[0][:2]
+#print('Using ' + current_locale + ' locale for outputs')
+#for key, value in tests.items():
+#    if 'command_denied' in value:
+#        tests[key]['output_expect_denied'] = value['output_expect_denied_' + current_locale]
 
 def make_config(list_of_tests):
     """

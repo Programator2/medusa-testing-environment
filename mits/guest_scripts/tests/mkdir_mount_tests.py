@@ -1,4 +1,4 @@
-class Mkdir_Mount_Tests():
+class Mkdir_Mount_Tests:
     def __init__(self):
         pass
 
