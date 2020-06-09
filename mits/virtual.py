@@ -4,11 +4,11 @@
 Controls Virtual machine execution
 """
 import time
-from vboxapi import VirtualBoxManager
-
 import commons
-import shell
+import remote_shell
 
+from vboxapi import VirtualBoxManager
+from logger import log_host
 
 def start_machine():
     """
@@ -16,17 +16,19 @@ def start_machine():
     50 seconds for the system to boot up.
     """
     mgr = VirtualBoxManager(None, None)
-    vbox = mgr.vbox print(f"Running VirtualBox version {vbox.version}") machine = vbox.findMachine(commons.VM_NAME)
+    vbox = mgr.vbox
+    log_host(f"Running VirtualBox version {vbox.version}")
+    machine = vbox.findMachine(commons.VM_NAME)
     session = mgr.getSessionObject(vbox)
     if machine.state == mgr.constants.all_values('MachineState')['Running']:
-        print('VM is already running')
+        log_host('VM is already running')
     elif machine.state == mgr.constants.all_values('MachineState')['PoweredOff'] or \
          machine.state == mgr.constants.all_values('MachineState')['Saved']:
         # TODO split this condition
         progress = machine.launchVMProcess(session, 'gui', '')
         progress.waitForCompletion(-1)
-        print('VM succesfully started')
-        print('Waiting for boot')
+        log_host('VM succesfully started')
+        log_host('Waiting for boot')
         # Waiting till virtual machine is ready to accept SSH connection
         time.sleep(50)
         # TODO try ping
@@ -43,17 +45,18 @@ def main(*argv):
     @param argv: Tuple of two lists. First list contains names of system calls
     to be tested and second one contains names of the testing suites to be run.
     """
-    start_machine()
-    print('Starting SSH conection')
-    if (shell.connect(argv) == 1):
+    #start_machine()
+    log_host('Starting SSH conection')
+    log_host(argv)
+    if (remote_shell.connect(argv[0]) == 1):
         time.sleep(60)
-        shell.connect(argv)
+        remote_shell.connect(argv[0])
 
 
 def setup_virtual_pc():
     """
     Used during installation of the testing environment to a virtual machine.
     """
-    start_machine()
-    print('Starting SSH conection')
-    shell.setup_virtual_pc()
+    #start_machine()
+    log_host('Starting SSH conection')
+    remote_shell.setup_virtual_pc()

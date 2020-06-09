@@ -5,9 +5,9 @@ Prepares new thread for starting the virtual machine
 """
 import threading
 import virtual
+from logger import log_host
 
-
-def main(test_list, suite_list):
+def main(*test_list):
     """
     Creates a new thread for module used to communicate with VirtualBox
     @param test_list: This list contains names of system calls to be tested.
@@ -15,14 +15,14 @@ def main(test_list, suite_list):
     Names of tests and suites that can be chosen are listed in the config module.
     @return: None
     """
-    thread = threading.Thread(target=virtual.main, args=(test_list, suite_list), name='vbox')
+    log_host(test_list)
+    thread = threading.Thread(target=virtual.main, args=test_list, name='vbox')
     thread.start()
 
 
 def setup_virtual_pc():
     """
-    Used when installing the testing environment to a virtual computer.
-    """
+    Used when installing the testing environment to a virtual computer.  """
     thread = threading.Thread(target=virtual.setup_virtual_pc(), name='vbox')
     thread.start()
 

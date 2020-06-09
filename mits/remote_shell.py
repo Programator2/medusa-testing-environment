@@ -23,7 +23,6 @@ class RemoteShell:
         @param port: Port of the server to connect to.
         @param username: Username
         @param password: Password of the chosen user.
-        @return: RemoteShell object.
         """
         self.ssh = paramiko.SSHClient()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -135,7 +134,7 @@ def connect(args):
     """
     try:
         ssh = RemoteShell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME,
-                    commons.USER_PASSWORD)
+                          commons.USER_PASSWORD)
     except error as e:
         log_host(e.args[1])
         exit(-1)
@@ -229,10 +228,6 @@ def is_sudo_active(ssh):
     """
     sudo = ssh.exec_cmd('sudo -n true 2>/dev/null && echo "True" || echo "False"')
     return 'True' in sudo
-    # if sudo.find('True') != -1:
-    #     return True
-    # else:
-    #     return False
 
 
 def upload_testing_suite(ssh, tests):
@@ -253,7 +248,7 @@ def upload_testing_suite(ssh, tests):
     guest_files.extend(glob('guest_scripts/tests/*py'))
     guest_files.extend(glob('guest_scripts/*bin'))
     guest_files.extend(glob('guest_scripts/configs/constable/*'))
-    common_files = ['commons.py', 'config.py', 'logger.py']
+    common_files = ['commons.py', 'logger.py']
     files = guest_files + common_files
     log_host(f"Transferred files {files}")
 
@@ -277,6 +272,7 @@ def upload_testing_suite(ssh, tests):
                 scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
     # Also upload pickled test names
     with open('pickled_tests', 'wb') as f:
+        log_host(tests)
         pickle.dump(tests, f)
     scp.put('pickled_tests', commons.VM_MTE_PATH, preserve_times=True)
     scp.close()

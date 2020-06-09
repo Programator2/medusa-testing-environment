@@ -22,8 +22,8 @@ def inject_paths(config):
         @param annotation - found annotation in config file
         @returns mapped path as str or AnnotationError
         """
-        mapped_string = annotation_mappings.get(annotation, '')
-        if not mapped_string:
+        mapped_string = annotation_mappings.get(annotation, None)
+        if mapped_string is None:
             raise AnnotationError(f"Guest: unknown annotation {annotation}")
         return mapped_string
 
