@@ -21,7 +21,8 @@ def inject_paths(config):
 
 def _inject_paths(config, annotation_mappings):
     """
-    Function replaces the found annotations inside config with path
+    Function replaces the found annotations inside config with path. The
+    function supports also smaller cycle detection of length 1.
     @param config - configuration text content as string
     @returns config with injected path
     """
@@ -45,12 +46,24 @@ def _inject_paths(config, annotation_mappings):
         annotation_pattern = '@{[A-Za-z_]+}'
         return set(re.findall(annotation_pattern, config_text))
 
-    if isinstance(config, str) is False:
+    def expand_annotation(config, annotation):
+        """
+        Helper function for expanding the provided annotation to it's mapping
+        @param config: the configuration file content, where annotations should
+        be replaced
+        @param annotation: annotation to be replaced with path
+        @return new config with expanded annotation to path
+        """
+        path = map_annotation_to_path(annotation)
+        return config.replace(annotation, path)
+
+    if not isinstance(config, str):
         raise ValueError('Guest: None config received')
 
-    found_annotations = get_distinct_annotations(config)
-    for annotation in found_annotations:
-        path = map_annotation_to_path(annotation)
-        config = config.replace(annotation, path)
-
+    old_config = None
+    while config != old_config:
+        found_annotations = get_distinct_annotations(config)
+        old_config = config
+        for annotation in found_annotations:
+            config = expand_annotation(config, annotation)
     return config
