@@ -3,9 +3,6 @@ import subprocess
 
 
 class LocalShell:
-    def __init__(self, testing_path):
-        self.execute_cmd('bash {testing_path}')
-
     def execute_cmd(self, cmd, is_async=False):
         """ Executes command on the system and returns output
         @param cmd: Command to be executed

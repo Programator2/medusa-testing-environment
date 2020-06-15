@@ -34,23 +34,8 @@ def start_machine():
         # TODO try ping
     else:
         machine_state = str(machine.state)
-        raise RuntimeError(f'Unexpected virtual machine state {machine_state}')
+        raise RuntimeError('Unexpected virtual machine state')
         # TODO nicer message for the user
-
-
-def main(*argv):
-    """
-    Used during normal testing. Afterwards it begins an SSH connection to
-    the running machine.
-    @param argv: Tuple of two lists. First list contains names of system calls
-    to be tested and second one contains names of the testing suites to be run.
-    """
-    #start_machine()
-    log_host('Starting SSH conection')
-    log_host(argv)
-    if (remote_shell.connect(argv[0]) == 1):
-        time.sleep(60)
-        remote_shell.connect(argv[0])
 
 
 def setup_virtual_pc():

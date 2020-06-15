@@ -1,0 +1,30 @@
+guest_connection:
+  machine_name: 'machine_name'
+  username: 'username'
+  password: 'password'
+  ip: '127.0.0.1'
+  port: 22
+
+guest_medusa:
+  medusa_path:  'path/to/medusa/'
+  include_grub: no
+
+# the paths in guest system
+guest_paths:
+  scripts: '/path/to/mits/scripts'
+  test_env: '/path/to/testing/env'
+
+guest_settings:
+  verbosity: no
+
+# available authorization servers for use
+authserver:
+  constable:
+    name: 'constable'
+    path: '/path/to/constable/'
+    config_extension: 'conf'
+    start_cmd: 'sudo constable ./constable.conf'
+  default: 'constable'
+
+# the destination where the report from testing is sent back from guest system to host
+host_report_dest: '/path/to/report/dest'

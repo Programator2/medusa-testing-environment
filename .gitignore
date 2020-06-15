@@ -62,13 +62,14 @@ target/
 .ipynb_checkpoints
 
 # Generated tests
-mits/pickled_tests
+mits/pickled_exec_category
 
 # Testing output
 testing_out
 
 # Custom configuration
-mits/commons.py
+mits/config.yaml
+mits/guest_scripts/subconfig.yaml
 
 # ctags
 tags

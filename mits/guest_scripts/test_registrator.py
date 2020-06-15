@@ -3,7 +3,6 @@ from creation_lsm_hooks_tests import Creation_Lsm_Hooks_Tests
 from local_shell import LocalShell
 from logger import log_guest
 from mits_enums import ExecutionCategory
-from commons import TESTING_PATH
 
 
 registered_suites = {}
@@ -23,7 +22,7 @@ def register_suites():
         else:
             raise Exception("Guest: Test Class is already registered")
 
-    shell = LocalShell(TESTING_PATH)
+    shell = LocalShell()
 
     # CI
     register_test_suite(Basic_Lsm_Hooks_Tests(shell), ExecutionCategory.CI.value)

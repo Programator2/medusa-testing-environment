@@ -6,8 +6,8 @@ import os
 import pickle
 import time
 import sys
+import yaml
 import tabulate
-import commons
 import test_registrator as TestRegistrator
 from asynchronous_reader import Reader
 from logger import log_guest
@@ -30,24 +30,32 @@ def test_director(pickle_location):
         with open(tests_path, 'rb') as f:
             return pickle.load(f, fix_imports=True)
 
-    os.chdir(commons.TESTING_PATH)
-    TestRegistrator.register_suites()
+    with open("subconfig.yaml", "r") as f:
+        config = yaml.load(f, Loader=yaml.Loader)
 
-    pickle_tests_path = os.path.join(commons.VM_MTE_PATH, pickle_location)
+    test_env_path = config['paths']['test_env']
+    scripts_path = config['paths']['scripts']
+    authserver_start_cmd = config['authserver']['start_cmd']
+    os.chdir(test_env_path)
+
+    TestRegistrator.register_suites()
+    PathInjector.annotation_init(config['paths'])
+
+    pickle_tests_path = os.path.join(scripts_path, pickle_location)
     execution_category = unpickle_tests(pickle_tests_path)
-    print(execution_category)
     log_guest(f"Test category to be run is {execution_category}")
 
     suites_to_run = TestRegistrator.get_test_suites_for(execution_category)
 
-    make_authserver_config()
+    make_authserver_config(scripts_path, test_env_path, config['authserver'])
     for test_category, test_suites in suites_to_run.items():
-        make_final_config(test_category, test_suites)
-        (results, outputs, outputs_denied) = start_suite(test_suites)
+        make_final_config(test_category, test_suites, scripts_path,
+                          test_env_path, config['authserver'])
+        results = start_suite(test_suites, authserver_start_cmd)
         print_class_report(results)
 
 
-def start_suite(suites):
+def start_suite(suites, authserver_start_cmd):
     """
     Main testing function, starts Constable and executes suites one after the
     other. When all testing is done, results are sent to the validator module
@@ -71,7 +79,7 @@ def start_suite(suites):
 
     def execute_suites(suites):
         log_guest('Starting Constable')
-        constable = Reader('sudo constable ' + commons.TESTING_PATH + '/constable.conf')
+        constable = Reader(authserver_start_cmd)
         # Catch first outputs and save them independently to testing outputs
 
         time.sleep(1)
@@ -93,13 +101,16 @@ def start_suite(suites):
     results = execute_suites(suites)
     cleanup_environment(suite_cleanups)
 
-    return (results, None, None)
+    return results
 
 
-def make_authserver_config():
-    log_guest('Creating configuration for authserver /constable.conf')
-    old_config_path = f'{commons.VM_MTE_PATH}/constable.conf'
-    new_config_path = f'{commons.TESTING_PATH}/constable.conf'
+def make_authserver_config(scripts_path, test_env_path, authserver_config):
+    authserver_name = authserver_config['name']
+    config_extension = authserver_config['config_extension']
+
+    log_guest(f'Creating configuration for authserver {authserver_name}')
+    old_config_path = f'{scripts_path}/{authserver_name}.{config_extension}'
+    new_config_path = f'{test_env_path}/{authserver_name}.{config_extension}'
     with open(new_config_path, 'w') as config_out:
         with open(old_config_path, "r") as config_file:
             config_content = config_file.read()
@@ -107,25 +118,28 @@ def make_authserver_config():
             config_out.write(config_content)
 
 
-def make_final_config(test_category, test_suites):
+def make_final_config(test_category, test_suites, scripts_path, test_env_path,
+                      authserver_config):
+    config_extension = authserver_config['config_extension']
     """
     Creates configuration file based on chosen testing classes.
     @param tests: List of test classes from which tests should be executed
     during testing.
     """
     def get_required_configs():
-        config_filenames = [f'{commons.VM_MTE_PATH}/{test_category}.conf']
-        print(config_filenames)
+        base_config = f'{scripts_path}/{test_category}.{config_extension}'
+        config_filenames = [base_config]
+        log_guest(config_filenames)
         for test_suite in test_suites:
             filename = test_suite.__class__.__name__.lower()
-            config_filenames.append(f'{commons.VM_MTE_PATH}/{filename}.conf')
+            suite_config_file = f'{scripts_path}/{filename}.{config_extension}'
+            config_filenames.append(suite_config_file)
             log_guest(f"Config {filename} appended to list")
-
         return config_filenames
 
     log_guest(f'Creating configuration /medusa.conf for {test_category}')
     config_filenames = get_required_configs()
-    with open(f'{commons.TESTING_PATH}/medusa.conf', 'w') as config_out:
+    with open(f'{test_env_path}/medusa.conf', 'w') as config_out:
         for config_filename in config_filenames:
             with open(config_filename, "r") as config_file:
                 config_content = config_file.read()
@@ -140,7 +154,6 @@ def class_tests(test_classes):
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
             results[test_name] = str(test_case())
-
     return results
 
 

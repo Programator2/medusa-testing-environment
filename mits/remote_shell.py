@@ -7,7 +7,6 @@ import hashlib
 import os
 import pickle
 import paramiko
-import commons
 
 from glob import glob
 from socket import error
@@ -125,27 +124,31 @@ class RemoteShell:
         self.ssh.close()
 
 
-def connect(args):
+def create_session(conn_info):
     """
-    Connects to a virtual machine and performs checks for a new version of
-    Medusa. Afterwards it executes the testing batch.
-    @param args: Tuple of two lists. First list contains names of system calls
-    to be tested and second one contains name of the testing suites to be run.
+    Connects to a virtual machine
     """
     try:
-        ssh = RemoteShell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME,
-                          commons.USER_PASSWORD)
+        return RemoteShell(conn_info['ip'], conn_info['port'],
+                           conn_info['username'], conn_info['password'])
     except error as e:
         log_host(e.args[1])
         exit(-1)
-        return
     except paramiko.ssh_exception.AuthenticationException as e:
         log_host(e.message)
         exit(-1)
-        return
-    # Downloading new version from repository
+
+
+def pull_latest_git_version(ssh, medusa_info, user_password):
+    """
+    Downloading new version of Medusa from repository and performs checks for
+    a new version of Medusa. Afterwards it executes the testing batch.
+    @param args: Tuple of two lists. First list contains names of system calls
+    to be tested and second one contains name of the testing suites to be run.
+    """
+    medusa_path, include_grub = medusa_info.values()
     log_host('Checking for new version of Medusa (this may take a while)')
-    ssh.exec_cmd('cd ' + commons.MEDUSA_PATH)
+    ssh.exec_cmd('cd ' + medusa_path)
     git_result = ssh.exec_cmd('git pull')
     while True:
         if 'Already up to date.' in git_result:
@@ -155,8 +158,8 @@ def connect(args):
         elif 'Updating' in git_result:
             log_host('Medusa was updated.')
             # assume that the newest kernel is automatically the default one
-            compile_command = commons.MEDUSA_PATH + '/build.sh --noreboot'
-            if commons.NO_GRUB:
+            compile_command = medusa_path + '/build.sh --noreboot'
+            if include_grub is False:
                 compile_command += ' --nogdb'
             if is_kernel_same(ssh):
                 compile_command += ' --medusa-only'
@@ -165,59 +168,47 @@ def connect(args):
             if is_sudo_active(ssh):
                 ssh.channel.send('sudo reboot\n')
             else:
-                ssh.channel.send('sudo reboot\n' + commons.USER_PASSWORD + '\n')
+                ssh.channel.send('sudo reboot\n' + user_password + '\n')
             ssh.close()
             log_host('Rebooting the system')
             return 1
             # TODO Don't save the output, it's too much
-        elif 'Please, commmit your changes or stash them before you can merge.' in git_result:
-            # TODO Make this selectable at the start of the script
-            while True:
-                choice = input('This will delete your local changes to Medusa. Do you want to continue? [y/N] ')\
-                    .lower()
-            if choice == 'y' or 'yes':
-                break
-            elif choice == '' or 'n' or 'no':
-                ssh.close()
-                exit()
-            ssh.exec_cmd('git reset --hard HEAD')
-            git_result = ssh.exec_cmd('git pull')
-            continue
         elif 'fatal: unable to access' in git_result:
             log_host("Couldn't connect to git. Continuing with current version.")
             break
         else:
             raise RuntimeError('Unrecognized git response')
+
+
+def start_testing(ssh, exec_category, test_scripts_path, authserver):
     # TODO add else for no Internet connection
     # Check if testing environment is located on VM. If not, copy it.
-    upload_testing_suite(ssh, args)
+    upload_testing_suite(ssh, exec_category, test_scripts_path, authserver)
+    ssh.exec_cmd(f"cd {test_scripts_path}")
     log_host('Start of testing procedure')
     # TODO Implement a bit safer version with sudo -k, with more attempts than just one and with better output control
     if is_sudo_active(ssh):
         log_host('Sudo is active, no need to input password')
-        # Starting without sudo, need to adjust accordingly
-        # TODO Change way of accessing sudo
-        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests')
+        ssh.instant_cmd(f'sudo python3 testing.py pickled_exec_category')
     else:
-        # password = raw_input('Please enter your sudo password to continue: ')
-        ssh.instant_cmd('sudo python3 ' + commons.VM_MTE_PATH + '/testing.py pickled_tests\n' + commons.USER_PASSWORD)
+        raise Exception("Host: The Sudo needs to be active")
     log_host('End of testing procedure')
-    #transport_results(ssh, args[1])
+    # transport_results(ssh, args[1])
     ssh.close()
     return 0
 
 
-def transport_results(ssh, suites):
-    """
-    Downloads test results from virtual machine to the host.
-    @param ssh: SSH connection to the virtual machine.
-    @param suites: List of names of test suites that were executed.
-    """
-    scp = SCPClient(ssh.ssh.get_transport())
-    scp.get(commons.TESTING_PATH + '/result_details', commons.OUTPUT_PATH, recursive=True)
-    for suite in suites:
-        scp.get(commons.TESTING_PATH + '/results_' + suite + '.html', commons.OUTPUT_PATH)
-    scp.close()
+# def transport_results(ssh, suites):
+#     """
+#     Downloads test results from virtual machine to the host.
+#     @param ssh: SSH connection to the virtual machine.
+#     @param suites: List of names of test suites that were executed.
+#     """
+#     scp = SCPClient(ssh.ssh.get_transport())
+#     scp.get(commons.TESTING_PATH + '/result_details', commons.OUTPUT_PATH, recursive=True)
+#     for suite in suites:
+#         scp.get(commons.TESTING_PATH + '/results_' + suite + '.html', commons.OUTPUT_PATH)
+#     scp.close()
 
 
 def is_sudo_active(ssh):
@@ -230,13 +221,14 @@ def is_sudo_active(ssh):
     return 'True' in sudo
 
 
-def upload_testing_suite(ssh, tests):
+def upload_testing_suite(ssh, exec_category, test_scripts_path, authserver):
     """
     Uploads files needed for testing. These are defined in files set.
-    Also uploads pickled tests chosen by user in host system.
+    Also uploads pickled exec_category chosen by user in host system.
     @param ssh: SSH connection
-    @param tests: Tuple of two lists. First list contains names of system calls to be tested and second one contains
+    @param exec_category: Tuple of two lists. First list contains names of system calls to be tested and second one contains
      name of the testing suites to be run.
+    @returns name of the uploaded file
     """
     # Set current directory to a folder, where the running script is located
     # print os.path.realpath(__file__)
@@ -247,34 +239,34 @@ def upload_testing_suite(ssh, tests):
     guest_files = glob('guest_scripts/*py')
     guest_files.extend(glob('guest_scripts/tests/*py'))
     guest_files.extend(glob('guest_scripts/*bin'))
-    guest_files.extend(glob('guest_scripts/configs/constable/*'))
-    common_files = ['commons.py', 'logger.py']
+    guest_files.extend(glob(f'guest_scripts/configs/{authserver}/*'))
+    guest_files.extend(glob('guest_scripts/*yaml'))
+    common_files = ['logger.py']
     files = guest_files + common_files
     log_host(f"Transferred files {files}")
 
-    path_exists_expression = '[ -d ' + commons.VM_MTE_PATH + ' ] && echo "True" || echo "False"'
+    path_exists_expression = f'[ -d {test_scripts_path} ] && echo "True" || echo "False"'
     path_exists = ssh.exec_cmd(path_exists_expression)
     if path_exists == 'False':
         # create path if it doesn't exist and copy all files without checking diference
         # TODO What if the path is invalid?
-        ssh.exec_cmd('mkdir -p ' + commons.VM_MTE_PATH)
+        ssh.exec_cmd(f'mkdir -p {test_scripts_path}')
         for f in files:
-            scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
+            scp.put(f, test_scripts_path, preserve_times=True)
     else:
         for f in files:
-            file_exists = ssh.exec_cmd('[ -f ' + commons.VM_MTE_PATH + '/' + f + ' ] && echo "True" || echo "False"')
+            file_exists = ssh.exec_cmd(f'[ -f {test_scripts_path}/{f} ] && echo "True" || echo "False"')
             if file_exists.find('True') != -1:
                 local_hash = hashlib.md5(open(f, 'rb').read()).hexdigest()
-                remote_hash = ssh.exec_cmd('md5sum ' + commons.VM_MTE_PATH + '/' + f)
+                remote_hash = ssh.exec_cmd(f'md5sum {test_scripts_path}/{f}')
                 if remote_hash.find(local_hash) == -1:
-                    scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
+                    scp.put(f, test_scripts_path, preserve_times=True)
             else:
-                scp.put(f, commons.VM_MTE_PATH, preserve_times=True)
+                scp.put(f, test_scripts_path, preserve_times=True)
     # Also upload pickled test names
-    with open('pickled_tests', 'wb') as f:
-        log_host(tests)
-        pickle.dump(tests, f)
-    scp.put('pickled_tests', commons.VM_MTE_PATH, preserve_times=True)
+    with open('pickled_exec_category', 'wb') as f:
+        pickle.dump(exec_category, f)
+    scp.put('pickled_exec_category', test_scripts_path, preserve_times=True)
     scp.close()
 
 
@@ -289,19 +281,10 @@ def is_kernel_same(ssh):
     return running.startswith(new)
 
 
-def setup_virtual_pc():
+def setup_virtual_pc(conn_info):
     """
     Installs the pexpect module on the virtual machine, for the asynchronous reader to work.
     """
-    try:
-        ssh = RemoteShell(commons.VM_IP, commons.VM_PORT, commons.USER_NAME, commons.USER_PASSWORD)
-    except error as e:
-        log_host(e.args[1])
-        exit(-1)
-        return
-    except paramiko.ssh_exception.AuthenticationException as e:
-        log_host(e.message)
-        exit(-1)
-        return
+    ssh = create_session(conn_info)
     ssh.instant_cmd('python3 -m pip install pexpect')
     ssh.close()
