@@ -17,17 +17,21 @@ def main(args):
     remote_shell.pull_latest_git_version(ssh, config['guest_medusa'],
                                          config['guest_connection']['password']
                                          )
-    make_subconfig(config)
+
+    make_subconfig(config, args)
     remote_shell.start_testing(ssh, args['category'],
                                config['guest_paths']['scripts'],
                                config['authserver']['default'])
 
 
-def make_subconfig(config):
-    default_authserver = config['authserver']['default']
+def make_subconfig(config, args):
+    chosen_authserver = args.get('authserver', None)
+
+    if chosen_authserver not in config['authserver'].keys():
+        chosen_authserver = config['authserver']['default']
 
     subconfig = {}
-    subconfig['authserver'] = config['authserver'][default_authserver]
+    subconfig['authserver'] = config['authserver'][chosen_authserver]
     subconfig['paths'] = config['guest_paths']
     subconfig['settings'] = config['guest_settings']
 
