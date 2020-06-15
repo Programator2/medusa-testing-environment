@@ -15,7 +15,12 @@ guest_paths:
   test_env: '/path/to/testing/env'
 
 guest_settings:
-  verbosity: no
+  verbose: no
+
+host_settings:
+  verbose: no
+
+testing_authserver: 'constable'
 
 # available authorization servers for use
 authserver:
@@ -24,7 +29,6 @@ authserver:
     path: '/path/to/constable/'
     config_extension: 'conf'
     start_cmd: 'sudo constable ./constable.conf'
-  default: 'constable'
 
 # the destination where the report from testing is sent back from guest system to host
 host_report_dest: '/path/to/report/dest'

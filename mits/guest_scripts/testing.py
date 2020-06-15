@@ -11,6 +11,7 @@ import tabulate
 import test_registrator as TestRegistrator
 from asynchronous_reader import Reader
 from logger import log_guest
+import test_settings
 import path_injector as PathInjector
 
 
@@ -33,6 +34,8 @@ def test_director(pickle_location):
     with open("subconfig.yaml", "r") as f:
         config = yaml.load(f, Loader=yaml.Loader)
 
+    test_settings.init(config['settings'])
+
     test_env_path = config['paths']['test_env']
     scripts_path = config['paths']['scripts']
     authserver_start_cmd = config['authserver']['start_cmd']
@@ -48,11 +51,12 @@ def test_director(pickle_location):
     suites_to_run = TestRegistrator.get_test_suites_for(execution_category)
 
     make_authserver_config(scripts_path, test_env_path, config['authserver'])
+    results = {}
     for test_category, test_suites in suites_to_run.items():
         make_final_config(test_category, test_suites, scripts_path,
                           test_env_path, config['authserver'])
-        results = start_suite(test_suites, authserver_start_cmd)
-        print_class_report(results)
+        results.update(start_suite(test_suites, authserver_start_cmd))
+    print_class_report(results)
 
 
 def start_suite(suites, authserver_start_cmd):
@@ -151,6 +155,7 @@ def class_tests(test_classes):
     results = {}
     for test_class in test_classes:
         tests = test_class.tests
+        # suite_name = test_class.__class__.__name__
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
             results[test_name] = str(test_case())

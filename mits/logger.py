@@ -1,5 +1,11 @@
+verbosity = False
+
+
 def log_host(message):
-    print(f"{message}")
+    if verbosity is True:
+        print(f"{message}")
+
 
 def log_guest(message):
-    print(f"Guest : {message}")
+    if verbosity is True:
+        print(f"Guest : {message}")

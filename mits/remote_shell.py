@@ -110,7 +110,7 @@ class RemoteShell:
                 # this we will have to wait until a newline
                 # TODO comes and then we can decide if we want to print it or not.
                 if new_data.find('[TPM]$ ') == -1 and new_data != '':
-                    log_host(new_data)
+                    print(new_data)
             else:
                 continue
             if channel_data.endswith(self.prompt):
@@ -139,14 +139,14 @@ def create_session(conn_info):
         exit(-1)
 
 
-def pull_latest_git_version(ssh, medusa_info, user_password):
+def pull_latest_git_version(ssh, medusa_conf, user_password):
     """
     Downloading new version of Medusa from repository and performs checks for
     a new version of Medusa. Afterwards it executes the testing batch.
     @param args: Tuple of two lists. First list contains names of system calls
     to be tested and second one contains name of the testing suites to be run.
     """
-    medusa_path, include_grub = medusa_info.values()
+    medusa_path, include_grub = medusa_conf.values()
     log_host('Checking for new version of Medusa (this may take a while)')
     ssh.exec_cmd('cd ' + medusa_path)
     git_result = ssh.exec_cmd('git pull')
