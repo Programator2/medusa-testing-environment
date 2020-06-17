@@ -28,6 +28,12 @@ def main(args):
 
 
 def override_config_options(config, args):
+    """
+    The function is responsible for overriding loaded config if there are some
+    user-specified options, which should be overriden
+    @param config: (dict) loaded instance with settings
+    @param args: (dict) user-specified settings to be overriden
+    """
     chosen_authserver = args.get('authserver', None)
     if chosen_authserver in config['authserver'].keys():
         config['testing_authserver'] = chosen_authserver
@@ -38,6 +44,10 @@ def override_config_options(config, args):
 
 
 def make_subconfig(config):
+    """
+    Make subconfig for guest machine from given config
+    @param config: (dict) loaded config
+    """
     chosen_authserver = config['testing_authserver']
 
     subconfig = {}

@@ -64,9 +64,10 @@ def start_suite(suites, authserver_start_cmd):
     Main testing function, starts Constable and executes suites one after the
     other. When all testing is done, results are sent to the validator module
     to be validated.
-    @param suites: List of system calls to be tested and called
-    @return: Tuple of results and outputs. Outputs list is included only in
-    concurrent suite, otherwise it's None.
+    @param suites: (list) test suites to be executed
+    @param authserver_start_cmd: (str) authserver start command
+    @returns (dict) of results from testing in {'test_name': is_passed_boolean}
+    key-value pairs
     """
     def get_setup_and_cleanup_routines(suites):
         suite_cleanups = []
@@ -88,7 +89,7 @@ def start_suite(suites, authserver_start_cmd):
 
         time.sleep(1)
         log_guest('Starting test batch')
-        results = class_tests(suites)
+        results = execute_tests(suites)
 
         log_guest('Terminating Constable')
         constable.terminate()
@@ -109,6 +110,13 @@ def start_suite(suites, authserver_start_cmd):
 
 
 def make_authserver_config(scripts_path, test_env_path, authserver_config):
+    """
+    Creates config for chosen authorization server
+    @param scripts_path: path to the MITS scripts on guest machine
+    @param test_env_path: path to testing environment on guest machine
+    @param authserver_config: (dict) configuration settings for authorization
+    server
+    """
     authserver_name = authserver_config['name']
     config_extension = authserver_config['config_extension']
 
@@ -126,11 +134,19 @@ def make_final_config(test_category, test_suites, scripts_path, test_env_path,
                       authserver_config):
     config_extension = authserver_config['config_extension']
     """
-    Creates configuration file based on chosen testing classes.
-    @param tests: List of test classes from which tests should be executed
-    during testing.
+    Creates configuration file based on chosen testing suites.
+    @param test_category: test category of executed test suites. Test category
+    is important for correct choice of base config
+    @param test_suites: (list) of test suites to be executed
+    @param scripts_path: (str) path to MITS scripts on guest machine
+    @param test_env_path: (str) path to testing environment on guest machine
+    @param authserver_config: configuration settings for authorization server
     """
     def get_required_configs():
+        """
+        Get config filenames for @test_suites
+        @returns list of config filenames
+        """
         base_config = f'{scripts_path}/{test_category}.{config_extension}'
         config_filenames = [base_config]
         log_guest(config_filenames)
@@ -151,11 +167,17 @@ def make_final_config(test_category, test_suites, scripts_path, test_env_path,
                 config_out.write(config_content)
 
 
-def class_tests(test_classes):
+def execute_tests(test_suites):
+    """
+    Routine for execution of tests from provided test_suites
+    @param test_suites: list of test suites, from which tests are being
+    executed
+    @returns (dict) of results from testing in {'test_name': is_passed_boolean}
+    key-value pairs
+    """
     results = {}
-    for test_class in test_classes:
-        tests = test_class.tests
-        # suite_name = test_class.__class__.__name__
+    for test_suite in test_suites:
+        tests = test_suite.tests
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
             results[test_name] = str(test_case())
@@ -163,6 +185,11 @@ def class_tests(test_classes):
 
 
 def print_class_report(results):
+    """
+    Temporary routine for reporting results to host machine
+    @param results: (dict) of results from testing in
+    {'test_name': is_passed_boolean} key-value pairs
+    """
     headers = ['Test name', 'Is passed']
     rows = [(name, result) for name, result in results.items()]
     print(tabulate.tabulate(rows, headers=headers))

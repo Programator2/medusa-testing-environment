@@ -8,23 +8,35 @@ annotation_mappings = {
 
 
 class ConfigAnnotation(Enum):
+    """
+    Annotations, which are used in authserver config files
+    @TEST_ENV is mapped to path of testing environment (the environment
+    where the tests are being executed)
+    """
     TEST_ENV = '@{TEST_ENV}'
 
 
 def annotation_init(config):
+    """
+    Initialization of annotation mappings
+    @param config: (dict) config with required paths for annotations
+    """
     annotation_mappings[ConfigAnnotation.TEST_ENV.value] = config['test_env']
 
 
 def inject_paths(config):
+    """
+    Function replaces the found annotations inside config with path. The
+    function supports also smaller cycle detection of length 1.
+    @param config - configuration text content as string
+    @returns config content (str) with injected path
+    """
     return _inject_paths(config, annotation_mappings)
 
 
 def _inject_paths(config, annotation_mappings):
     """
-    Function replaces the found annotations inside config with path. The
-    function supports also smaller cycle detection of length 1.
-    @param config - configuration text content as string
-    @returns config with injected path
+    Lower level function for path injection, used for unit testing only
     """
     def map_annotation_to_path(annotation):
         """

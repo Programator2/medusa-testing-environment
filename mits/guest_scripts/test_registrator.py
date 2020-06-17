@@ -13,6 +13,13 @@ def register_suites():
     Function registers all test classes from which the tests can be executed
     """
     def register_test_suite(test_suite, execution_category):
+        """
+        Registration subroutine for registering test_suite for provided exec.
+        category
+        @param test_suite: test suite instance to be registered
+        @paran execution_category: execution category for test suite
+        @Exception is raised if the test suite is registered already
+        """
         test_class = test_suite.__class__.__name__.lower()
         is_registered = test_class in registered_suites.keys()
         if is_registered is False:
@@ -20,7 +27,7 @@ def register_suites():
             registered_suites.setdefault(execution_category, []) \
                 .append(test_suite)
         else:
-            raise Exception("Guest: Test Class is already registered")
+            raise Exception("Guest: Test suite is already registered")
 
     shell = LocalShell()
 
@@ -43,7 +50,7 @@ def get_test_suites_for(execution_category):
     """
     suites_to_run = registered_suites.get(execution_category, None)
     if suites_to_run is None:
-        raise ValueError(f"Guest: no tests registered for {execution_category}")
+        raise ValueError("Guest: no tests registered for given category")
 
     test_suites = {}
     for test_suite in registered_suites.get(execution_category, None):

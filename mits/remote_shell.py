@@ -127,6 +127,8 @@ class RemoteShell:
 def create_session(conn_info):
     """
     Connects to a virtual machine
+    @conn_info: (dict) connection info for connection to guest machine
+    @returns created ssh session or error message otherwise
     """
     try:
         return RemoteShell(conn_info['ip'], conn_info['port'],
@@ -143,8 +145,9 @@ def pull_latest_git_version(ssh, medusa_conf, user_password):
     """
     Downloading new version of Medusa from repository and performs checks for
     a new version of Medusa. Afterwards it executes the testing batch.
-    @param args: Tuple of two lists. First list contains names of system calls
-    to be tested and second one contains name of the testing suites to be run.
+    @param ssh: ssh session
+    @param medusa_conf: (tuple) medusa path and built options
+    @param user_password: (str) password of the logged user on guest machine
     """
     medusa_path, include_grub = medusa_conf.values()
     log_host('Checking for new version of Medusa (this may take a while)')
@@ -181,6 +184,16 @@ def pull_latest_git_version(ssh, medusa_conf, user_password):
 
 
 def start_testing(ssh, exec_category, test_scripts_path, authserver):
+    """
+    Give control from the shell to the guest machine, so it can start the test
+    execution. After the execution is done, fetch the results from testing back
+    @param ssh: ssh session instance
+    @param exec_category: execution category to be executed
+    @param test_scripts_path: path, where the scripts are located on guest
+    machine
+    @param: authserver: (str) the authserver name, with which the testing
+    should be executed
+    """
     # TODO add else for no Internet connection
     # Check if testing environment is located on VM. If not, copy it.
     upload_testing_suite(ssh, exec_category, test_scripts_path, authserver)
@@ -226,8 +239,11 @@ def upload_testing_suite(ssh, exec_category, test_scripts_path, authserver):
     Uploads files needed for testing. These are defined in files set.
     Also uploads pickled exec_category chosen by user in host system.
     @param ssh: SSH connection
-    @param exec_category: Tuple of two lists. First list contains names of system calls to be tested and second one contains
-     name of the testing suites to be run.
+    @param exec_category: execution category to be executed on guest machine
+    @param test_scripts_path: (str) path, where the scripts are located on
+    guest machine
+    @param: authserver: (str) the authserver name, with which the testing
+    should be executed
     @returns name of the uploaded file
     """
     # Set current directory to a folder, where the running script is located
@@ -284,6 +300,7 @@ def is_kernel_same(ssh):
 def setup_virtual_pc(conn_info):
     """
     Installs the pexpect module on the virtual machine, for the asynchronous reader to work.
+    @conn_info: (dict) connection info for connection to guest machine
     """
     ssh = create_session(conn_info)
     ssh.instant_cmd('python3 -m pip install pexpect')
