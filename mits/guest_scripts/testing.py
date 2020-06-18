@@ -11,38 +11,44 @@ import tabulate
 import test_registrator as TestRegistrator
 from asynchronous_reader import Reader
 from logger import log_guest
+from local_shell import LocalShell
+import uuid
 import test_settings
 import path_injector as PathInjector
 
 
-def test_director(pickle_location):
+def unpickle_tests(tests_path):
+    """
+    Reads pickled tests from test_path, which were pickled by host system.
+    @param tests_path: Full path to the pickled data file.
+    @return: Pickled data. It should be tuple of lists containing names of
+    the tests and suites, respectively.
+    """
+    with open(tests_path, 'rb') as f:
+        return pickle.load(f, fix_imports=True)
+
+
+def init():
+    with open("subconfig.yaml", "r") as f:
+        config = yaml.load(f, Loader=yaml.Loader)
+
+    test_settings.init(config['settings'])
+    TestRegistrator.register_suites()
+    PathInjector.annotation_init(config['paths'])
+    return config
+
+
+def test_director(config, pickle_location):
     """
     Unpickles tuple of tests and suites chosen by the user to be executed.
     Based on the selected tests, it creates configuration for Constable.
     @param pickle_location: File name of the pickled test information
     """
-    def unpickle_tests(tests_path):
-        """
-        Reads pickled tests from test_path, which were pickled by host system.
-        @param tests_path: Full path to the pickled data file.
-        @return: Pickled data. It should be tuple of lists containing names of
-        the tests and suites, respectively.
-        """
-        with open(tests_path, 'rb') as f:
-            return pickle.load(f, fix_imports=True)
-
-    with open("subconfig.yaml", "r") as f:
-        config = yaml.load(f, Loader=yaml.Loader)
-
-    test_settings.init(config['settings'])
 
     test_env_path = config['paths']['test_env']
     scripts_path = config['paths']['scripts']
+    test_location = config['paths']['test_location']
     authserver_start_cmd = config['authserver']['start_cmd']
-    os.chdir(test_env_path)
-
-    TestRegistrator.register_suites()
-    PathInjector.annotation_init(config['paths'])
 
     pickle_tests_path = os.path.join(scripts_path, pickle_location)
     execution_category = unpickle_tests(pickle_tests_path)
@@ -50,16 +56,41 @@ def test_director(pickle_location):
 
     suites_to_run = TestRegistrator.get_test_suites_for(execution_category)
 
+    # The testing environment dir contains all the files that we need to
+    # reference
+    os.chdir(test_env_path)
     make_authserver_config(scripts_path, test_env_path, config['authserver'])
+
     results = {}
+    test_category_setup(test_env_path)
     for test_category, test_suites in suites_to_run.items():
         make_final_config(test_category, test_suites, scripts_path,
-                          test_env_path, config['authserver'])
-        results.update(start_suite(test_suites, authserver_start_cmd))
+                          test_env_path, config['authserver']
+                          )
+
+        test_location_path = f'{test_location}/{test_category}'
+        os.mkdir(test_location_path)
+        new_results = start_suite(test_suites, authserver_start_cmd,
+                                  test_location_path, test_env_path)
+        #test_category_cleanup(test_env_path)
+
+        results.update(new_results)
     print_class_report(results)
 
 
-def start_suite(suites, authserver_start_cmd):
+def test_category_setup(target_path):
+    os.mkdir(f'{target_path}/allowed')
+    os.mkdir(f'{target_path}/restricted')
+
+
+def test_category_cleanup(target_path):
+    shell = LocalShell()
+    shell.execute_cmd(f"rm -rf {target_path}/allowed")
+    shell.execute_cmd(f"rm -rf {target_path}/restricted")
+
+
+def start_suite(suites, authserver_start_cmd, test_location_path,
+                target_location):
     """
     Main testing function, starts Constable and executes suites one after the
     other. When all testing is done, results are sent to the validator module
@@ -69,42 +100,41 @@ def start_suite(suites, authserver_start_cmd):
     @returns (dict) of results from testing in {'test_name': is_passed_boolean}
     key-value pairs
     """
-    def get_setup_and_cleanup_routines(suites):
-        suite_cleanups = []
-        suite_setups = []
-        for suite in suites:
-            suite_cleanups.append(suite._suite_cleanup)
-            suite_setups.append(suite._suite_setup)
-        return (suite_setups, suite_cleanups)
 
-    def setup_environment(suite_setups):
-        log_guest('Setup of environment for test execution')
-        for suite_setup in suite_setups:
-            suite_setup()
+    def setup_environment(test_suite):
+        log_guest(f'Setup of environment for {test_suite.__class__.__name__}')
+        tests = test_suite.tests
+        for test in tests:
+            test_name = test[0]
+            random_target_dir = uuid.uuid4().hex
+            test_location = f'{test_location_path}/{test_name}'
+            os.mkdir(test_location)
+            os.chdir(test_location)
+            test_suite._test_setup(target_location, random_target_dir)
 
     def execute_suites(suites):
+        os.chdir(target_location)
         log_guest('Starting Constable')
         constable = Reader(authserver_start_cmd)
-        # Catch first outputs and save them independently to testing outputs
 
         time.sleep(1)
         log_guest('Starting test batch')
-        results = execute_tests(suites)
+        results = execute_tests(suites, test_location_path)
 
         log_guest('Terminating Constable')
         constable.terminate()
         return results
 
-    def cleanup_environment(suite_cleanups):
-        log_guest('Cleanup of environment after testing')
-        for suite_cleanup in suite_cleanups:
-            suite_cleanup()
+    #def cleanup_environment(suite_cleanups):
+    #    log_guest('Cleanup of environment after testing')
+    #    for suite_cleanup in suite_cleanups:
+    #        suite_cleanup()
 
-    (suite_setups, suite_cleanups) = get_setup_and_cleanup_routines(suites)
+    #(suite_setups, suite_cleanups) = get_setup_and_cleanup_routines(suites)
 
-    setup_environment(suite_setups)
+    for suite in suites:
+        setup_environment(suite)
     results = execute_suites(suites)
-    cleanup_environment(suite_cleanups)
 
     return results
 
@@ -167,7 +197,7 @@ def make_final_config(test_category, test_suites, scripts_path, test_env_path,
                 config_out.write(config_content)
 
 
-def execute_tests(test_suites):
+def execute_tests(test_suites, test_location):
     """
     Routine for execution of tests from provided test_suites
     @param test_suites: list of test suites, from which tests are being
@@ -180,6 +210,7 @@ def execute_tests(test_suites):
         tests = test_suite.tests
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
+            os.chdir(f'{test_location}/{test_name}')
             results[test_name] = str(test_case())
     return results
 
@@ -198,4 +229,5 @@ def print_class_report(results):
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    test_director(sys.argv[1])
+    config = init()
+    test_director(config, sys.argv[1])

@@ -122,10 +122,8 @@ class Basic_Lsm_Hooks_Tests(TestBase):
         result = self.shell_session.execute_cmd(action_cmd)
         return ShellAnswer.DENIED.value in result
 
-    def _suite_setup(self):
-        self.shell_session.execute_cmd('mkdir restricted')
-        self.shell_session.execute_cmd('mkdir allowed')
-
-    def _suite_cleanup(self):
-        self.shell_session.execute_cmd('rm -rf restricted')
-        self.shell_session.execute_cmd('rm -rf allowed')
+    def _test_setup(self, target, dummy):
+        self.shell_session.execute_cmd(f'mkdir {target}/restricted/{dummy}')
+        self.shell_session.execute_cmd(f'mkdir {target}/allowed/{dummy}')
+        self.shell_session.execute_cmd(f'ln -s {target}/restricted/{dummy} restricted')
+        self.shell_session.execute_cmd(f'ln -s {target}/allowed/{dummy} allowed')
