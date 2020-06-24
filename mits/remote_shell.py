@@ -202,7 +202,7 @@ def start_testing(ssh, exec_category, test_scripts_path, authserver):
     # TODO Implement a bit safer version with sudo -k, with more attempts than just one and with better output control
     if is_sudo_active(ssh):
         log_host('Sudo is active, no need to input password')
-        ssh.instant_cmd(f'sudo python3 testing.py pickled_exec_category')
+        ssh.instant_cmd(f'sudo python3 main.py pickled_exec_category')
     else:
         raise Exception("Host: The Sudo needs to be active")
     log_host('End of testing procedure')
