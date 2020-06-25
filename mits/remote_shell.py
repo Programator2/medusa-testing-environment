@@ -257,28 +257,20 @@ def upload_testing_suite(ssh, exec_category, test_scripts_path, authserver):
     guest_files.extend(glob('guest_scripts/*bin'))
     guest_files.extend(glob(f'guest_scripts/configs/{authserver}/*'))
     guest_files.extend(glob('guest_scripts/*yaml'))
-    common_files = ['logger.py']
+    common_files = ['logger.py', 'test_settings.py']
     files = guest_files + common_files
     log_host(f"Transferred files {files}")
 
-    path_exists_expression = f'[ -d {test_scripts_path} ] && echo "True" || echo "False"'
-    path_exists = ssh.exec_cmd(path_exists_expression)
+    path_exists_test = f'[ -d {test_scripts_path} ] && echo "True" || echo "False"'
+    path_exists = ssh.exec_cmd(path_exists_test)
     if path_exists == 'False':
-        # create path if it doesn't exist and copy all files without checking diference
-        # TODO What if the path is invalid?
         ssh.exec_cmd(f'mkdir -p {test_scripts_path}')
-        for f in files:
-            scp.put(f, test_scripts_path, preserve_times=True)
     else:
-        for f in files:
-            file_exists = ssh.exec_cmd(f'[ -f {test_scripts_path}/{f} ] && echo "True" || echo "False"')
-            if file_exists.find('True') != -1:
-                local_hash = hashlib.md5(open(f, 'rb').read()).hexdigest()
-                remote_hash = ssh.exec_cmd(f'md5sum {test_scripts_path}/{f}')
-                if remote_hash.find(local_hash) == -1:
-                    scp.put(f, test_scripts_path, preserve_times=True)
-            else:
-                scp.put(f, test_scripts_path, preserve_times=True)
+        ssh.exec_cmd(f'rm {test_scripts_path}/*')
+
+    for f in files:
+        scp.put(f, test_scripts_path, preserve_times=True)
+
     # Also upload pickled test names
     with open('pickled_exec_category', 'wb') as f:
         pickle.dump(exec_category, f)
