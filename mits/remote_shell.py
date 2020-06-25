@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
 """
 @package mits.remote_shell
 Controls communication with a virtual machine through SSH protocol
 """
-import hashlib
 import os
 import pickle
 import paramiko
@@ -87,8 +85,7 @@ class RemoteShell:
         """
         channel_data = ""
         sent = False
-        # Number of characters that needs to be cut before actual output begins
-        cut = len(command)+2
+        num_chars_before_output = len(command)+2
         while True:
             if not sent:
                 self.channel.send(command + '\n')
@@ -96,14 +93,12 @@ class RemoteShell:
                 channel_data = ""
             if self.channel.recv_ready():
                 new_data = self.channel.recv(9999).decode()
-                if 0 < cut < len(new_data):
-                    # We have enough material to cut
-                    new_data = new_data[cut:]
-                    # print "Cutting " + cut + "characters"
-                    cut = 0
-                elif cut >= len(new_data):
+                if 0 < num_chars_before_output < len(new_data):
+                    new_data = new_data[num_chars_before_output:]
+                    num_chars_before_output = 0
+                elif num_chars_before_output >= len(new_data):
                     # Cut everything
-                    cut -= len(new_data)
+                    num_chars_before_output -= len(new_data)
                     new_data = ''
                 channel_data += new_data
                 # TODO Detect ending prompt and stop it from being shown. For
@@ -157,7 +152,6 @@ def pull_latest_git_version(ssh, medusa_conf, user_password):
         if 'Already up to date.' in git_result:
             log_host('Medusa is up to date.')
             break
-            # continue
         elif 'Updating' in git_result:
             log_host('Medusa was updated.')
             # assume that the newest kernel is automatically the default one
@@ -175,7 +169,6 @@ def pull_latest_git_version(ssh, medusa_conf, user_password):
             ssh.close()
             log_host('Rebooting the system')
             return 1
-            # TODO Don't save the output, it's too much
         elif 'fatal: unable to access' in git_result:
             log_host("Couldn't connect to git. Continuing with current version.")
             break
@@ -194,34 +187,18 @@ def start_testing(ssh, exec_category, test_scripts_path, authserver):
     @param: authserver: (str) the authserver name, with which the testing
     should be executed
     """
-    # TODO add else for no Internet connection
-    # Check if testing environment is located on VM. If not, copy it.
     upload_testing_suite(ssh, exec_category, test_scripts_path, authserver)
     ssh.exec_cmd(f"cd {test_scripts_path}")
     log_host('Start of testing procedure')
-    # TODO Implement a bit safer version with sudo -k, with more attempts than just one and with better output control
+
     if is_sudo_active(ssh):
         log_host('Sudo is active, no need to input password')
-        ssh.instant_cmd(f'sudo python3 main.py pickled_exec_category')
+        ssh.instant_cmd('sudo python3 main.py pickled_exec_category')
     else:
         raise Exception("Host: The Sudo needs to be active")
     log_host('End of testing procedure')
-    # transport_results(ssh, args[1])
     ssh.close()
     return 0
-
-
-# def transport_results(ssh, suites):
-#     """
-#     Downloads test results from virtual machine to the host.
-#     @param ssh: SSH connection to the virtual machine.
-#     @param suites: List of names of test suites that were executed.
-#     """
-#     scp = SCPClient(ssh.ssh.get_transport())
-#     scp.get(commons.TESTING_PATH + '/result_details', commons.OUTPUT_PATH, recursive=True)
-#     for suite in suites:
-#         scp.get(commons.TESTING_PATH + '/results_' + suite + '.html', commons.OUTPUT_PATH)
-#     scp.close()
 
 
 def is_sudo_active(ssh):
@@ -291,7 +268,8 @@ def is_kernel_same(ssh):
 
 def setup_virtual_pc(conn_info):
     """
-    Installs the pexpect module on the virtual machine, for the asynchronous reader to work.
+    Installs the pexpect module on the virtual machine, for the asynchronous
+    reader to work.
     @conn_info: (dict) connection info for connection to guest machine
     """
     ssh = create_session(conn_info)
