@@ -25,15 +25,15 @@ if platform.system() == 'Windows':
     subprocess.call(['py', '-2', 'vboxapisetup.py', 'install'])
     os.chdir(old_path)
 
-setup(name='mte',
-      version='0.1.0',
-      description='Testing environment for Medusa security system',
-      url='https://github.com/Programator2/medusa-testing-environment',
-      author='Roderik Ploszek',
+setup(name='mits',
+      version='2.0.0',
+      description='Testing integration system for Medusa security system',
+      url='https://github.com/medusa-team/medusa-testing-environment',
+      author='Team Medusa',
       author_email='roderik.ploszek@gmail.com',
       license='MIT',
-      packages=['mte'],
-      install_requires=['paramiko==1.16.0', 'scp==0.10.2'],
+      packages=['mits'],
+      install_requires=['paramiko==1.16.0', 'scp==0.10.2', 'pyyaml'],
       zip_safe=True,
       include_package_data=True,
       cmdclass={'install': MyInstall})
