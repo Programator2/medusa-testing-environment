@@ -54,7 +54,7 @@ def get_test_suites_for(execution_category):
 
     test_suites = {}
     for test_suite in registered_suites.get(execution_category, None):
-        test_category = test_suite.test_category
-        test_suites.setdefault(test_category, []).append(test_suite)
+        for test_category in test_suite.test_categories:
+            test_suites.setdefault(test_category, []).append(test_suite)
 
     return test_suites

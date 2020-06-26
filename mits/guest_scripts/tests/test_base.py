@@ -5,9 +5,9 @@ class TestBase:
     """
     Class implements preparation logic behinds the scenes and is ready for
     inheritance. Classes, which inherit this class implements just tests.
-    @ test_category - test category of a test suite (string)
+    @test_categories - test categories to which test suite belongs (list)
     """
-    test_category = None
+    test_categories = None
 
     def __init__(self, shell_session):
         def _discover_tests():

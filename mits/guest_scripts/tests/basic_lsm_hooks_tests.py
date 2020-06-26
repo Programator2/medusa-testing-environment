@@ -3,7 +3,7 @@ from test_base import TestBase
 
 
 class Basic_Lsm_Hooks_Tests(TestBase):
-    test_category = TestCategory.BASIC.value
+    test_categories = [TestCategory.BASIC.value]
 
     def symlink_basic_creation_allow(self):
         example_text_file = 'allowed/symlink_allow_example_file.txt'

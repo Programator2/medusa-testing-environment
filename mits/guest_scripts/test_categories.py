@@ -1,21 +1,33 @@
 import os
+import sh
 from mits_enums import TestCategory
 
 
-def creation_setup(test_env_path):
-    if not os.path.exists(test_env_path):
-        raise Exception("Testing path not found")
+def creation_setup(test_category_path, **kwargs):
+    if os.path.exists(test_category_path):
+        raise Exception("Testing path was not cleaned up")
 
-    os.mkdir(f'{test_env_path}/allowed')
-    os.mkdir(f'{test_env_path}/restricted')
+    sh.mkdir(f'{test_category_path}')
+    sh.mkdir(f'{test_category_path}/allowed')
+    sh.mkdir(f'{test_category_path}/restricted')
 
 
-def basic_workflows_setup(test_category_path):
-    if not os.path.exists(test_category_path):
-        raise Exception("Testing path not found")
+def basic_workflows_setup(test_category_path, **kwargs):
+    if os.path.exists(test_category_path):
+        raise Exception("Testing path was not cleaned up")
 
-    os.mkdir(f'{test_category_path}/allowed')
-    os.mkdir(f'{test_category_path}/restricted')
+    sh.mkdir(f'{test_category_path}')
+    sh.mkdir(f'{test_category_path}/allowed')
+    sh.mkdir(f'{test_category_path}/restricted')
+
+
+def mounting_setup(test_category_path, **kwargs):
+    if os.path.exists(test_category_path):
+        raise Exception("Testing path was not cleaned up")
+
+    sh.mount(f'{test_category_path}')
+    sh.mkdir(f'{test_category_path}/allowed')
+    sh.mkdir(f'{test_category_path}/restricted')
 
 
 setup_routines = {

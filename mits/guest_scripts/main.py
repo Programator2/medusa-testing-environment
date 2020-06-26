@@ -126,7 +126,6 @@ def setup_test_categories_in_test_env(test_categories, test_env_path,
     """
     for test_category in test_categories:
         test_category_path = f'{test_env_path}/{test_category}'
-        os.mkdir(test_category_path)
         setup = setup_routines[test_category]
         setup(test_category_path)
         log_guest(f"Set up test category {test_category}")
@@ -140,16 +139,6 @@ def setup_test_suite_dirs_in_tests(tests_path, test_env_path, suites_to_run):
     @param suites_to_run: dict, where key is test category and value is tuple
     of test suites
     """
-    def merge_suites(suites_to_run_values):
-        """
-        Merge tuples of test suites into one list
-        @param suites_to_run_values: list of tuples
-        """
-        all_test_suites = []
-        for test_suites in suites_to_run_values:
-            all_test_suites += test_suites
-        return all_test_suites
-
     def generate_dummy_dir_name():
         """
         Generate random name for dir
@@ -159,34 +148,31 @@ def setup_test_suite_dirs_in_tests(tests_path, test_env_path, suites_to_run):
     if not os.path.exists(tests_path):
         raise Exception("Tests dir not found")
 
-    all_test_suites = merge_suites(list(suites_to_run.values()))
-
-    for test_suite in all_test_suites:
-        test_category = test_suite.test_category
-        test_env_category_path = f'{test_env_path}/{test_category}'
-
+    for test_category, test_suites in suites_to_run.items():
         tests_category_path = f'{tests_path}/{test_category}'
-        test_suite_name = test_suite.__class__.__name__
-        test_suite_path = f'{tests_category_path}/{test_suite_name}'
+        for test_suite in test_suites:
+            test_suite_name = test_suite.__class__.__name__
+            test_suite_path = f'{tests_category_path}/{test_suite_name}'
 
-        if not os.path.isdir(tests_category_path):
-            os.mkdir(tests_category_path)
+            if not os.path.isdir(tests_category_path):
+                os.mkdir(tests_category_path)
 
-        os.mkdir(test_suite_path)
-        tests = test_suite.tests
-        for test_name, _ in tests:
-            test_path = f'{test_suite_path}/{test_name}'
-            os.mkdir(test_path)
+            os.mkdir(test_suite_path)
+            tests = test_suite.tests
+            for test_name, _ in tests:
+                test_path = f'{test_suite_path}/{test_name}'
+                os.mkdir(test_path)
 
-            # the infrastructure is not very well designed, the test setup is
-            # prepared from relative path, so we need to set current test case
-            # as current dir
-            os.chdir(test_path)
+                # the infrastructure is not very well designed, the test setup
+                # is prepared from relative path, so we need to set current
+                # test case as current dir
+                os.chdir(test_path)
 
-            dummy_dir = generate_dummy_dir_name()
-            test_suite._test_setup(test_env_category_path, dummy_dir)
+                dummy_dir = generate_dummy_dir_name()
+                test_env_category_path = f'{test_env_path}/{test_category}'
+                test_suite._test_setup(test_env_category_path, dummy_dir)
 
-        log_guest(f"Set up dir for test suite {test_suite_name}")
+            log_guest(f"Set up dir for test suite {test_suite_name}")
 
 
 def setup_base_authserver_configs(scripts_path, tests_path, test_categories,

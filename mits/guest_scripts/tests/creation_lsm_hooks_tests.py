@@ -2,7 +2,7 @@ from mits_enums import ShellAnswer, TestCategory
 from test_base import TestBase
 
 class Creation_Lsm_Hooks_Tests(TestBase):
-    test_category = TestCategory.CREATION.value
+    test_categories = [TestCategory.CREATION.value]
 
     def mkdir_basic_allow(self):
         dir_to_create = 'allowed/mkdir_allow_test'
