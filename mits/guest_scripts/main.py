@@ -258,14 +258,16 @@ def start_testing(suites_to_run, tests_path, test_env_path,
     @returns (dict) of results from testing in {'test_name': is_passed_boolean}
     key-value pairs
     """
+    def copy_medusa_conf_to_test_env(src, dest):
+        shutil.copyfile(f'{src}/medusa.conf', f'{dest}/medusa.conf')
+
     all_results = {}
     for test_category, test_suites in suites_to_run.items():
         test_category_path = f'{tests_path}/{test_category}'
         # it is required to copy medusa.conf file to test environment, because
         # this is where the authserver is going to search for the file
-        shutil.copyfile(f'{test_category_path}/medusa.conf',
-                        f'{test_env_path}/medusa.conf'
-                        )
+        copy_medusa_conf_to_test_env(test_category_path, test_env_path)
+
         # we need to change the dir to test_category_path because this is where
         # the authserver config is stored and being read
         os.chdir(test_category_path)
@@ -276,7 +278,7 @@ def start_testing(suites_to_run, tests_path, test_env_path,
         time.sleep(1)
         log_guest('Starting test batch')
         results = execute_tests(test_suites, test_category_path)
-        all_results.update(results)
+        all_results[test_category] = results
 
         log_guest('Terminating authorization server')
         constable.terminate()
@@ -298,10 +300,11 @@ def execute_tests(test_suites, tests_category_path):
     for test_suite in test_suites:
         tests = test_suite.tests
         suite_name = test_suite.__class__.__name__
+        results[suite_name] = {}
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
             os.chdir(f'{tests_category_path}/{suite_name}/{test_name}')
-            results[test_name] = str(test_case())
+            results[suite_name][test_name] = str(test_case())
     return results
 
 
@@ -311,8 +314,14 @@ def print_test_report(results):
     @param results: (dict) of results from testing in
     {'test_name': is_passed_boolean} key-value pairs
     """
-    headers = ['Test name', 'Is passed']
-    rows = [(name, result) for name, result in results.items()]
+    headers = ['Test category', 'Test suite', 'Test name', 'Is passed']
+    rows = []
+    for test_category, test_suites in results.items():
+        for test_suite_name, test_cases in test_suites.items():
+            for test_name, test_result in test_cases.items():
+                rows.append((test_category, test_suite_name,
+                             test_name, test_result)
+                            )
     print(tabulate.tabulate(rows, headers=headers))
 
 
