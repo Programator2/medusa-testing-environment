@@ -10,7 +10,7 @@ import remote_shell
 from vboxapi import VirtualBoxManager
 from logger import log_host
 
-def start_machine():
+def remote_start_guest_machine():
     """
     Starts the virtual machine. If it was not running before, it waits
     50 seconds for the system to boot up.

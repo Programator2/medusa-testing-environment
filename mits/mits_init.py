@@ -1,30 +1,42 @@
 import yaml
 import remote_shell
 import test_settings
+import time
 from logger import log_host
-# from virtual import start_machine
+from virtual import remote_start_guest_machine
 
 
 def main(args):
     with open("config.yaml", "r") as config_file:
         config = yaml.load(config_file, Loader=yaml.Loader)
 
+    guest_conn_info = config['guest_connection']
+
     test_settings.init(config['host_settings'])
-    # start_machine()
+    is_host_virtual_machine = config['host_settings']['is_virtual_machine']
+    if not is_host_virtual_machine:
+        remote_start_guest_machine()
+
     log_host('Starting SSH conection')
-    # if (remote_shell.connect(argv[0]) == 1):
-    #    time.sleep(60)
-    #    remote_shell.connect(argv[0])
-    ssh = remote_shell.create_session(config['guest_connection'])
-    remote_shell.pull_latest_git_version(ssh, config['guest_medusa'],
+    ssh = remote_shell.create_session(guest_conn_info)
+    is_updated = remote_shell.pull_latest_git_version(
+                                         ssh,
+                                         config['guest_medusa'],
                                          config['guest_connection']['password']
                                          )
+    if is_updated and is_host_virtual_machine is False:
+        ssh = wait_for_reset_and_create_new_ssh_session(guest_conn_info)
 
     override_config_options(config, args)
     make_subconfig(config)
     remote_shell.start_testing(ssh, args['category'],
                                config['guest_paths']['scripts'],
                                config['testing_authserver'])
+
+
+def wait_for_reset_and_create_new_ssh_session(conn_info):
+    time.sleep(60)
+    return remote_shell.create_session(conn_info)
 
 
 def override_config_options(config, args):
