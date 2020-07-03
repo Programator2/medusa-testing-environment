@@ -3,6 +3,7 @@
 This module executes tests and testing suites
 """
 from asynchronous_reader import Reader
+from errors import CleanupError
 from logger import log_guest
 import path_injector as PathInjector
 import test_categories
@@ -12,6 +13,7 @@ import test_settings
 import os
 import pickle
 import shutil
+import sh
 import sys
 import tabulate
 import time
@@ -27,6 +29,7 @@ def main(pickle_location):
     tests_path = config['paths']['tests']
     scripts_path = config['paths']['scripts']
     authserver_config = config['authserver']
+    testing_options = config['testing_options']
 
     test_settings.init(config['settings'])
     TestRegistrator.register_suites()
@@ -34,11 +37,13 @@ def main(pickle_location):
     exec_category = get_exec_category(scripts_path, pickle_location)
     suites_to_run = get_test_suites(exec_category)
 
+    cleanup_mount_partitions(test_env_path, testing_options)
     cleanup_dirs(test_env_path, tests_path)
     create_dirs(test_env_path, tests_path)
 
     setup_test_categories_in_test_env(suites_to_run.keys(), test_env_path,
-                                      test_categories.setup_routines
+                                      test_categories.setup_routines,
+                                      testing_options
                                       )
     setup_test_suite_dirs_in_tests(tests_path, test_env_path,
                                    suites_to_run
@@ -54,6 +59,56 @@ def main(pickle_location):
     results = start_testing(suites_to_run, tests_path, test_env_path,
                             authserver_config['start_cmd'])
     print_test_report(results)
+
+
+def cleanup_mount_partitions(test_env_path, testing_options):
+    """
+    Make cleanup of partitions dirs
+    @param test_env_path: str path to test environment
+    @param testing_options: dict with special options for testing like
+    available partitions for mounting
+    """
+    if (
+        testing_options is None
+        or testing_options.get('mounting', None) is None
+    ):
+        log_guest("No mounting options found")
+        return
+
+    available_partitions = testing_options['mounting'].get('partitions', None)
+    if available_partitions is None:
+        log_guest("No available partitions found")
+        return
+
+    if not os.path.exists(test_env_path):
+        os.mkdir(test_env_path)
+
+    tmp_mount_dir = f'{test_env_path}/tmp{uuid.uuid4().hex}'
+    if not os.path.exists(tmp_mount_dir):
+        log_guest(f"Creating {tmp_mount_dir} for cleanup of mount partitions")
+        os.mkdir(tmp_mount_dir)
+
+    for partition in available_partitions:
+        # mount points can be nested and therefore we could umount all the
+        # mounted partitions in the first iteration, we have to check each time
+        # remaining partitions
+        all_mounted_partitions = sh.df().stdout.decode()
+        if not os.path.exists(partition):
+            log_guest(f"{partition} does not exist, removing from the options")
+            available_partitions.remove(partition)
+            continue
+
+        # if the partition is mounted somewhere in the filesystem, umount it
+        # first and we will mount it to our specific dir
+        if partition in all_mounted_partitions:
+            log_guest(f"Umount of {partition}")
+            sh.umount(partition, '-O --recursive')
+
+        log_guest(f"Cleanup of device {partition}")
+        sh.mount(partition, tmp_mount_dir, '-text4')
+        shutil.rmtree(tmp_mount_dir, ignore_errors=True)
+        sh.umount(partition)
+    os.rmdir(tmp_mount_dir)
 
 
 def get_exec_category(scripts_path, pickle_filename):
@@ -115,7 +170,7 @@ def create_dirs(*args):
 
 
 def setup_test_categories_in_test_env(test_categories, test_env_path,
-                                      setup_routines):
+                                      setup_routines, testing_options):
     """
     Setup dirs for test categories in test environment dir
     @param test_categories: list of test_categories, for which dirs should be
@@ -127,7 +182,7 @@ def setup_test_categories_in_test_env(test_categories, test_env_path,
     for test_category in test_categories:
         test_category_path = f'{test_env_path}/{test_category}'
         setup = setup_routines[test_category]
-        setup(test_category_path)
+        setup(test_category_path, options=testing_options)
         log_guest(f"Set up test category {test_category}")
 
 
@@ -146,7 +201,7 @@ def setup_test_suite_dirs_in_tests(tests_path, test_env_path, suites_to_run):
         return uuid.uuid4().hex
 
     if not os.path.exists(tests_path):
-        raise Exception("Tests dir not found")
+        raise CleanupError("Tests dir not found")
 
     for test_category, test_suites in suites_to_run.items():
         tests_category_path = f'{tests_path}/{test_category}'
@@ -163,9 +218,8 @@ def setup_test_suite_dirs_in_tests(tests_path, test_env_path, suites_to_run):
                 test_path = f'{test_suite_path}/{test_name}'
                 os.mkdir(test_path)
 
-                # the infrastructure is not very well designed, the test setup
-                # is prepared from relative path, so we need to set current
-                # test case as current dir
+                # the test setup is prepared from relative path, so we need to
+                # set current test case as current dir
                 os.chdir(test_path)
 
                 dummy_dir = generate_dummy_dir_name()

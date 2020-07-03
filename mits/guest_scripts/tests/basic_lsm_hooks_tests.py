@@ -1,7 +1,5 @@
 from mits_enums import ShellAnswer, TestCategory
 from test_base import TestBase
-
-
 class Basic_Lsm_Hooks_Tests(TestBase):
     test_categories = [TestCategory.BASIC.value]
 
@@ -122,8 +120,8 @@ class Basic_Lsm_Hooks_Tests(TestBase):
         result = self.shell_session.execute_cmd(action_cmd)
         return ShellAnswer.DENIED.value in result
 
-    def _test_setup(self, target, dummy):
-        self.shell_session.execute_cmd(f'mkdir {target}/restricted/{dummy}')
-        self.shell_session.execute_cmd(f'mkdir {target}/allowed/{dummy}')
-        self.shell_session.execute_cmd(f'ln -s {target}/restricted/{dummy} restricted')
-        self.shell_session.execute_cmd(f'ln -s {target}/allowed/{dummy} allowed')
+    def _test_setup(self, dest, dummy):
+        self.shell_session.execute_cmd(f'mkdir {dest}/restricted/{dummy}')
+        self.shell_session.execute_cmd(f'mkdir {dest}/allowed/{dummy}')
+        self.shell_session.execute_cmd(f'ln -s {dest}/restricted/{dummy} restricted')
+        self.shell_session.execute_cmd(f'ln -s {dest}/allowed/{dummy} allowed')

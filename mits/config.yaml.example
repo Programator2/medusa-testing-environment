@@ -13,12 +13,19 @@ guest_medusa:
 guest_paths:
   scripts: '/path/to/mits/scripts'
   test_env: '/path/to/testing/env'
+  tests: '/path/to/tests/dir'
+
+testing_options:
+  mounting:
+    partitions:
+      - '/dev/sda'
 
 guest_settings:
   verbose: no
 
 host_settings:
   verbose: no
+  is_virtual_machine: yes
 
 testing_authserver: 'constable'
 

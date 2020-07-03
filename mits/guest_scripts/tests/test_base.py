@@ -25,8 +25,5 @@ class TestBase:
         self.shell_session = shell_session
         self.tests = _discover_tests()
 
-    def _suite_setup(self):
-        return NotImplementedError()
-
-    def _suite_cleanup(self):
+    def _test_setup(self):
         return NotImplementedError()

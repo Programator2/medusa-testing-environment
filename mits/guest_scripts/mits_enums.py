@@ -2,8 +2,6 @@ from enum import Enum
 
 
 class ShellAnswer(Enum):
-    """
-    """
     EMPTY = ''
     DENIED = 'Permission denied'
     NOENT = 'No such file or directory'
@@ -40,3 +38,8 @@ class TestCategory(Enum):
     created successfully.
     """
     CREATION = 'creation'
+
+    """
+    @MOUNTING - tests which check the behavior of system calls on mounted units
+    """
+    MOUNTING = 'mounting'

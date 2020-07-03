@@ -3,7 +3,7 @@ import remote_shell
 import test_settings
 import time
 from logger import log_host
-from virtual import remote_start_guest_machine
+#from virtual import remote_start_guest_machine
 
 
 def main(args):
@@ -66,6 +66,7 @@ def make_subconfig(config):
     subconfig['authserver'] = config['authserver'][chosen_authserver]
     subconfig['paths'] = config['guest_paths']
     subconfig['settings'] = config['guest_settings']
+    subconfig['testing_options'] = config['testing_options']
 
     yamlContent = yaml.dump(subconfig, Dumper=yaml.Dumper)
     with open("guest_scripts/subconfig.yaml", "w") as f:
