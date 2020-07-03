@@ -26,10 +26,10 @@ if platform.system() == 'Windows':
     os.chdir(old_path)
 
 setup(name='mits',
-      version='2.0.0',
+      version='2.0.0-rc.1',
       description='Testing integration system for Medusa security system',
       url='https://github.com/medusa-team/medusa-testing-environment',
-      author='Team Medusa',
+      author='Roderik Ploszek',
       author_email='roderik.ploszek@gmail.com',
       license='MIT',
       packages=['mits'],
