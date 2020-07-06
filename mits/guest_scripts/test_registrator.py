@@ -1,5 +1,5 @@
-from basic_lsm_hooks_tests import Basic_Lsm_Hooks_Tests
-from creation_lsm_hooks_tests import Creation_Lsm_Hooks_Tests
+from basic_lsm_hooks_tests import BasicLsmHooksTests
+from creation_lsm_hooks_tests import CreationLsmHooksTests
 from local_shell import LocalShell
 from logger import log_guest
 from mits_enums import ExecutionCategory
@@ -32,8 +32,8 @@ def register_suites():
     shell = LocalShell()
 
     # CI
-    register_test_suite(Basic_Lsm_Hooks_Tests(shell), ExecutionCategory.CI.value)
-    register_test_suite(Creation_Lsm_Hooks_Tests(shell), ExecutionCategory.CI.value)
+    register_test_suite(BasicLsmHooksTests(shell), ExecutionCategory.CI.value)
+    register_test_suite(CreationLsmHooksTests(shell), ExecutionCategory.CI.value)
 
     # Regression
 

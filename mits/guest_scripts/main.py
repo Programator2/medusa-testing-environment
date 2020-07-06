@@ -10,6 +10,8 @@ import test_categories
 import test_registrator as TestRegistrator
 import test_settings
 
+import colorama
+from colorama import Fore, Style
 import os
 import pickle
 import shutil
@@ -279,7 +281,7 @@ def setup_testing_configs(scripts_path, tests_path, authserver_config,
         base_config = f'{scripts_path}/{test_category}.{config_extension}'
         config_filenames = [base_config]
         for test_suite in test_suites:
-            filename = test_suite.__class__.__name__.lower()
+            filename = test_suite.config_filename
             suite_config_file = f'{scripts_path}/{filename}.{config_extension}'
             config_filenames.append(suite_config_file)
             log_guest(f"Config {filename} appended to list")
@@ -358,7 +360,17 @@ def execute_tests(test_suites, tests_category_path):
         for test_name, test_case in tests:
             log_guest(f'Executing test {test_name}: {test_case}')
             os.chdir(f'{tests_category_path}/{suite_name}/{test_name}')
-            results[suite_name][test_name] = str(test_case())
+            try:
+                test_case()
+                results[suite_name][test_name] = (
+                                    Fore.GREEN + "PASSED" + Style.RESET_ALL,
+                                    None
+                                    )
+            except AssertionError as e:
+                results[suite_name][test_name] = (
+                                    Fore.RED + "FAILED",
+                                    Fore.YELLOW + str(e) + Style.RESET_ALL
+                                    )
     return results
 
 
@@ -368,13 +380,15 @@ def print_test_report(results):
     @param results: (dict) of results from testing in
     {'test_name': is_passed_boolean} key-value pairs
     """
-    headers = ['Test category', 'Test suite', 'Test name', 'Is passed']
+    headers = ['Test category', 'Test suite', 'Test name', 'Result', 'Error']
     rows = []
+    colorama.init(autoreset=True)
     for test_category, test_suites in results.items():
         for test_suite_name, test_cases in test_suites.items():
             for test_name, test_result in test_cases.items():
+                test_text, error = test_result
                 rows.append((test_category, test_suite_name,
-                             test_name, test_result)
+                             test_name, test_text, error)
                             )
     print(tabulate.tabulate(rows, headers=headers))
 

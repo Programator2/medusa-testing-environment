@@ -1,4 +1,5 @@
 import inspect
+import should_be.all
 
 
 class TestBase:
@@ -8,6 +9,7 @@ class TestBase:
     @test_categories - test categories to which test suite belongs (list)
     """
     test_categories = None
+    config_filename = None
 
     def __init__(self, shell_session):
         def _discover_tests():
@@ -18,7 +20,7 @@ class TestBase:
             methods = inspect.getmembers(self, predicate=inspect.ismethod)
             found_tests = []
             for name, func in methods:
-                if not name.startswith("_"):
+                if not name.startswith("_") and not name.startswith("should"):
                     found_tests.append((name, func))
             return found_tests
 
