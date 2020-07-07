@@ -129,10 +129,10 @@ def create_session(conn_info):
         return RemoteShell(conn_info['ip'], conn_info['port'],
                            conn_info['username'], conn_info['password'])
     except error as e:
-        log_host(e.args[1])
+        print(e.args[1])
         exit(-1)
     except paramiko.ssh_exception.AuthenticationException as e:
-        log_host(e.message)
+        print(e.message)
         exit(-1)
 
 
