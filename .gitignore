@@ -60,3 +60,16 @@ target/
 
 #Ipython Notebook
 .ipynb_checkpoints
+
+# Generated tests
+mits/pickled_exec_category
+
+# Testing output
+testing_out
+
+# Custom configuration
+mits/config.yaml
+mits/guest_scripts/subconfig.yaml
+
+# ctags
+tags

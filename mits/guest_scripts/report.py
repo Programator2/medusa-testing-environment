@@ -1,4 +1,5 @@
-"""@package mte.report
+"""
+@package mits.report
 This module creates an HTML report from validated outputs.
 """
 # TODO Make error highlighting in cooperation with validator
